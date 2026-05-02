@@ -1,0 +1,33 @@
+# AGENTS.md
+
+## Monorepo Layout
+- `apps/backend`: NestJS (PostgreSQL, TypeORM/Prisma, JSearch API)
+- `apps/frontend`: NextJS (App Router, Tailwind CSS)
+- `packages/types`: Shared TypeScript DTOs
+
+## Commands
+### Backend (apps/backend)
+- Dev: `npm run start:dev`
+- Test: `npm run test` (Jest)
+- Build: `npm run build`
+
+### Frontend (apps/frontend)
+- Dev: `npm run dev`
+- Test: `npm run test` (Jest/React Testing Library)
+- Build: `npm run build`
+
+## Environment
+### Backend
+- `.env` in `apps/backend`:
+  - `DATABASE_URL`: PostgreSQL connection string
+  - `JWT_SECRET`: JWT signing secret
+  - `JSEARCH_API_KEY`: RapidAPI JSearch key
+
+### Frontend
+- `.env.local` in `apps/frontend`:
+  - `NEXT_PUBLIC_API_URL`: Backend base URL (e.g., http://localhost:3000)
+
+## Key Paths
+- Matching logic: `apps/backend/src/matching`
+- JSearch service: `apps/backend/src/jsearch`
+- Full specs/timeline: `PLAN_DESARROLLO.md`
