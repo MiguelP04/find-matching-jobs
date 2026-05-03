@@ -1,0 +1,13 @@
+{
+  "name": "@find-matching-jobs/types",
+  "version": "1.0.0",
+  "description": "Shared TypeScript DTOs for find-matching-jobs",
+  "main": "src/index.ts",
+  "scripts": {
+    "build": "tsc",
+    "clean": "rm -rf dist"
+  },
+  "keywords": ["types", "dto", "shared"],
+  "author": "",
+  "license": "UNLICENSED"
+}
