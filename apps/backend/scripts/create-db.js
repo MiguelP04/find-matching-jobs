@@ -3,6 +3,13 @@ require('dotenv').config({ path: `${__dirname}/../.env` })
 
 async function createDatabase() {
   const dbUrl = new URL(process.env.DATABASE_URL)
+  
+  // Si es una base de datos en la nube como Neon, saltamos la creación automática
+  if (dbUrl.hostname.includes('neon.tech')) {
+    console.log('ℹ Conexión a Neon detectada. Saltando creación de base de datos automática.');
+    return;
+  }
+
   const dbName = dbUrl.pathname.slice(1)
   const adminDbUrl = new URL(process.env.DATABASE_URL)
   adminDbUrl.pathname = '/postgres'
