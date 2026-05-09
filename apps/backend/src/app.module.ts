@@ -8,21 +8,22 @@ import { ProfilesModule } from './profiles/profiles.module';
 import { SkillsModule } from './skills/skills.module';
 import { JobsModule } from './jobs/jobs.module';
 import { MatchingModule } from './matching/matching.module';
+import { AuthModule } from './auth/auth.module'; // <--- 1. Importa el módulo
 
 @Module({
   imports: [
-    // Configuration module for environment variables
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: '.env',
     }),
-    // TypeORM module for PostgreSQL (basic configuration)
     TypeOrmModule.forRoot({
       type: 'postgres',
       url: process.env.DATABASE_URL,
       autoLoadEntities: true,
-      synchronize: false,
+      synchronize: true,
+      //true temporal para desarrollo
     }),
+    AuthModule, // <--- 2. Agrégalo aquí
     UsersModule,
     ProfilesModule,
     SkillsModule,

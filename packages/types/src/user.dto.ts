@@ -1,24 +1,30 @@
-import { IsOptional, IsString, IsEmail, IsEnum } from 'class-validator';
-import { UserRole } from './auth.dto';
+import {
+  IsOptional,
+  IsString,
+  IsEmail,
+  IsEnum,
+  IsNotEmpty,
+} from "class-validator";
+import { UserRole } from "./auth.dto";
 
 export class CreateUserDto {
   @IsString()
   @IsNotEmpty()
-  nombre: string;
+  nombre!: string;
 
   @IsString()
   @IsNotEmpty()
-  apellido: string;
+  apellido!: string;
 
   @IsEmail()
-  email: string;
+  email!: string;
 
   @IsString()
   @IsNotEmpty()
-  password: string;
+  password!: string;
 
   @IsEnum(UserRole)
-  rol: UserRole;
+  rol!: UserRole;
 }
 
 export class UpdateUserDto {
@@ -36,11 +42,11 @@ export class UpdateUserDto {
 }
 
 export class UserResponseDto {
-  id: string;
-  nombre: string;
-  apellido: string;
-  email: string;
-  rol: UserRole;
-  createdAt: Date;
-  updatedAt: Date;
+  id!: string;
+  nombre!: string;
+  apellido!: string;
+  email!: string;
+  rol!: UserRole;
+  createdAt!: Date;
+  updatedAt!: Date;
 }
