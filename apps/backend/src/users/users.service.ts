@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from './entities/user.entity'; // Tu entidad de TypeORM
-import { RegisterDto } from '@project/types';
+import { RegisterDto } from '@find-matching-jobs/types';
 
 @Injectable()
 export class UsersService {
