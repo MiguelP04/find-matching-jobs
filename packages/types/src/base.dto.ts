@@ -14,7 +14,7 @@ export class PaginationDto {
 }
 
 export class ApiResponseDto<T> {
-  success: boolean;
+  success!: boolean;
   data?: T;
   message?: string;
   errors?: string[];
@@ -27,7 +27,7 @@ export class ApiResponseDto<T> {
 }
 
 export class BaseEntityDto {
-  id: string;
-  createdAt: Date;
-  updatedAt: Date;
+  id!: string;
+  createdAt!: Date;
+  updatedAt!: Date;
 }
