@@ -9,28 +9,28 @@ export enum UserRole {
 @Entity('users')
 export class User {
   @PrimaryGeneratedColumn()
-  id: number
+  id!: number
 
   @Column({ length: 100 })
-  nombre: string
+  nombre!: string
 
   @Column({ length: 100 })
-  apellido: string
+  apellido!: string
 
   @Column({ unique: true })
-  email: string
+  email!: string
 
   @Column()
-  password: string
+  password!: string
 
   @Column({
     type: 'enum',
     enum: UserRole,
     default: UserRole.ESTUDIANTE,
   })
-  rol: UserRole
+  rol!: UserRole
 
   @OneToOne(() => Profile, (profile) => profile.user, { cascade: true })
   @JoinColumn()
-  profile: Profile
+  profile!: Profile
 }

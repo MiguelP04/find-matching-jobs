@@ -7,7 +7,15 @@
     "build": "tsc",
     "clean": "rm -rf dist"
   },
-  "keywords": ["types", "dto", "shared"],
+  "keywords": [
+    "types",
+    "dto",
+    "shared"
+  ],
   "author": "",
-  "license": "UNLICENSED"
+  "license": "UNLICENSED",
+  "dependencies": {
+    "class-transformer": "^0.5.1",
+    "class-validator": "^0.15.1"
+  }
 }
