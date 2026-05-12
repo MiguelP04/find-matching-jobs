@@ -1,6 +1,6 @@
 import { Controller, Post, Body } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { RegisterDto, LoginDto } from '@project/types';
+import { RegisterDto, LoginDto } from '@find-matching-jobs/types';
 
 @Controller('auth')
 export class AuthController {

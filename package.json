@@ -1,1 +1,9 @@
-{}
+{
+  "name": "find-matching-jobs",
+  "version": "0.0.0",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ]
+}
