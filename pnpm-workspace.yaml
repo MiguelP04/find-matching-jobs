@@ -9,4 +9,4 @@ allowBuilds:
   '@scarf/scarf': false
   bcrypt: true
   sharp: true
-  unrs-resolver: false
+  unrs-resolver: true
