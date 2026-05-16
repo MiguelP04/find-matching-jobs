@@ -5,16 +5,19 @@
 - `apps/frontend`: NextJS (App Router, Tailwind CSS)
 - `packages/types`: Shared TypeScript DTOs
 
+## Package Manager
+This monorepo uses **pnpm** with workspaces. All commands should use `pnpm` instead of `npm`.
+
 ## Commands
 ### Backend (apps/backend)
-- Dev: `npm run start:dev`
-- Test: `npm run test` (Jest)
-- Build: `npm run build`
+- Dev: `pnpm run start:dev`
+- Test: `pnpm run test` (Jest)
+- Build: `pnpm run build`
 
 ### Frontend (apps/frontend)
-- Dev: `npm run dev`
-- Test: `npm run test` (Jest/React Testing Library)
-- Build: `npm run build`
+- Dev: `pnpm run dev`
+- Test: `pnpm run test` (Jest/React Testing Library)
+- Build: `pnpm run build`
 
 ## Environment
 ### Backend
@@ -34,17 +37,17 @@
 
 ## Migrations (TypeORM)
 ### Backend (apps/backend)
-- Generate: `npm run migration:generate -- MigrationName`
-- Run: `npm run migration:run`
-- Revert: `npm run migration:revert`
+- Generate: `pnpm run migration:generate -- MigrationName`
+- Run: `pnpm run migration:run`
+- Revert: `pnpm run migration:revert`
 - Initial migration created: `src/migrations/1746400000000-InitialSchema.ts`
 - Uses `src/config/data-source.ts` for CLI configuration
 - Synchronize is disabled (`false`) - uses migrations only
 
-### Setup local
+### Setup local (apps/backend)
 1. Configure `.env` with `DATABASE_URL`
-2. Run `npm run db:create` to create the database
-3. Run `npm run migration:run` to apply migrations
+2. Run `pnpm run db:create` to create the database
+3. Run `pnpm run migration:run` to apply migrations
 
 ## Git Rules
 - **NEVER** commit changes without explicit user permission
