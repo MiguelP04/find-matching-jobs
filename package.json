@@ -8,8 +8,9 @@
   ],
   "pnpm": {
     "onlyBuiltDependencies": [
+      "@nestjs/core",
       "bcrypt",
-      "@nestjs/core"
+      "sharp"
     ]
   }
 }

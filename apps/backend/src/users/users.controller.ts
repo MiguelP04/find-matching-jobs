@@ -1,4 +1,4 @@
-import { Controller, Get, Patch, Delete, Param, Body, UseGuards, Request, ForbiddenException } from '@nestjs/common';
+import { Controller, Get, Patch, Delete, Param, Body, UseGuards, Request, ForbiddenException, HttpCode } from '@nestjs/common';
 import { Request as ExpressRequest } from 'express';
 import { UsersService } from './users.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -45,9 +45,10 @@ export class UsersController {
   }
 
   @Delete(':id')
+  @HttpCode(204)
   @UseGuards(RolesGuard)
   @Roles(UserRole.ADMIN)
-  delete(@Param('id') id: string) {
-    return this.usersService.delete(Number(id));
+  async delete(@Param('id') id: string): Promise<void> {
+    await this.usersService.delete(Number(id));
   }
 }

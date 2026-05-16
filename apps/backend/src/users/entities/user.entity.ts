@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, OneToOne, JoinColumn } from 'typeorm'
+import { Entity, PrimaryGeneratedColumn, Column, OneToOne } from 'typeorm'
 import { Profile } from '../../profiles/entities/profile.entity'
 import { Exclude } from 'class-transformer'
 
@@ -33,6 +33,5 @@ export class User {
   rol!: UserRole
 
   @OneToOne(() => Profile, (profile) => profile.user, { cascade: true })
-  @JoinColumn()
   profile!: Profile
 }
