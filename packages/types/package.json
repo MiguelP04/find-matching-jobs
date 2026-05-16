@@ -16,7 +16,7 @@
   "scripts": {
     "build": "tsc",
     "clean": "rm -rf dist",
-    "prepare": "npm run build"
+    "prepare": "pnpm run build"
   },
   "keywords": [
     "types",

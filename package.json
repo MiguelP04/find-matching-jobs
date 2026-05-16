@@ -5,5 +5,11 @@
   "workspaces": [
     "apps/*",
     "packages/*"
-  ]
+  ],
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "bcrypt",
+      "@nestjs/core"
+    ]
+  }
 }
