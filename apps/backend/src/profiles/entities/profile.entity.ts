@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, OneToOne, OneToMany } from 'typeorm'
+import { Entity, PrimaryGeneratedColumn, Column, OneToOne, OneToMany, JoinColumn } from 'typeorm'
 import { User } from '../../users/entities/user.entity'
 import { StudentSkill } from '../../skills/entities/student-skill.entity'
 import { MatchResult } from '../../matching/entities/match-result.entity'
@@ -37,6 +37,7 @@ export class Profile {
   linkedin_url: string
 
   @OneToOne(() => User, (user) => user.profile, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'user_id' })
   user: User
 
   @OneToMany(() => StudentSkill, (studentSkill) => studentSkill.student, { cascade: true })
