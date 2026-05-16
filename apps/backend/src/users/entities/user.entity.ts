@@ -1,5 +1,6 @@
 import { Entity, PrimaryGeneratedColumn, Column, OneToOne, JoinColumn } from 'typeorm'
 import { Profile } from '../../profiles/entities/profile.entity'
+import { Exclude } from 'class-transformer'
 
 export enum UserRole {
   ESTUDIANTE = 'estudiante',
@@ -21,6 +22,7 @@ export class User {
   email!: string
 
   @Column()
+  @Exclude()
   password!: string
 
   @Column({
