@@ -6,11 +6,5 @@
     "apps/*",
     "packages/*"
   ],
-  "pnpm": {
-    "onlyBuiltDependencies": [
-      "@nestjs/core",
-      "bcrypt",
-      "sharp"
-    ]
-  }
+  "packageManager": "pnpm@11.1.2"
 }
