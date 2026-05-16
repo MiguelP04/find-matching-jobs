@@ -35,6 +35,10 @@
     "@nestjs/swagger": "^11.4.2",
     "@nestjs/throttler": "^6.5.0",
     "@nestjs/typeorm": "^11.0.1",
+<<<<<<< HEAD
+=======
+    "@find-matching-jobs/types": "workspace:*",
+>>>>>>> a26bdce29e71dede0119de47b7af927d437a0bb4
     "axios": "^1.16.0",
     "bcrypt": "^6.0.0",
     "class-transformer": "^0.5.1",
