@@ -6,7 +6,7 @@ shamefullyHoist: true
 
 allowBuilds:
   '@nestjs/core': true
-  '@scarf/scarf': set this to true or false
+  '@scarf/scarf': false
   bcrypt: true
   sharp: true
-  unrs-resolver: set this to true or false
+  unrs-resolver: false
