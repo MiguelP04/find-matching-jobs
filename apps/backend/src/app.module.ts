@@ -26,8 +26,7 @@ import { AuthModule } from './auth/auth.module'; // <--- 1. Importa el módulo
       type: 'postgres',
       url: process.env.DATABASE_URL,
       autoLoadEntities: true,
-      synchronize: true,
-      //true temporal para desarrollo
+      synchronize: false,
     }),
     AuthModule, // <--- 2. Agrégalo aquí
     UsersModule,

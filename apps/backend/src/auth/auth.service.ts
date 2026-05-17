@@ -33,12 +33,54 @@ export class AuthService {
     const user = await this.usersService.findOneByEmail(loginDto.email);
     if (!user) throw new UnauthorizedException('Credenciales inválidas');
 
+    if (!user.password) throw new UnauthorizedException('Credenciales inválidas');
+
     const isPasswordValid = await bcrypt.compare(loginDto.password, user.password);
     if (!isPasswordValid) throw new UnauthorizedException('Credenciales inválidas');
 
     // Generar JWT
     const payload = { sub: user.id, email: user.email, rol: user.rol };
     
+    return {
+      access_token: this.jwtService.sign(payload),
+      user: {
+        id: user.id,
+        nombre: user.nombre,
+        email: user.email,
+        rol: user.rol,
+      },
+    };
+  }
+
+  async loginWithGoogle(googleProfile: {
+    googleId: string;
+    email: string;
+    nombre: string;
+    apellido: string;
+    avatar?: string;
+  }) {
+    let user = await this.usersService.findOneByGoogleId(googleProfile.googleId)
+      ?? await this.usersService.findOneByEmail(googleProfile.email);
+
+    if (user) {
+      if (!user.googleId) {
+        await this.usersService.update(user.id, {
+          googleId: googleProfile.googleId,
+          avatar: googleProfile.avatar,
+        }, user.id, user.rol);
+      }
+    } else {
+      user = await this.usersService.create({
+        googleId: googleProfile.googleId,
+        email: googleProfile.email,
+        nombre: googleProfile.nombre,
+        apellido: googleProfile.apellido,
+        avatar: googleProfile.avatar,
+      });
+    }
+
+    const payload = { sub: user.id, email: user.email, rol: user.rol };
+
     return {
       access_token: this.jwtService.sign(payload),
       user: {

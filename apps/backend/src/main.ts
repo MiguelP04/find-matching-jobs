@@ -1,6 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, ClassSerializerInterceptor } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
+import session from 'express-session';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
@@ -36,6 +37,14 @@ async function bootstrap() {
     .build();
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, document);
+
+  app.use(
+    session({
+      secret: process.env.JWT_SECRET || 'secret',
+      resave: false,
+      saveUninitialized: false,
+    }),
+  );
 
   await app.listen(process.env.PORT ?? 3000);
 }
