@@ -5,6 +5,7 @@ import { AuthService } from './auth.service';
 const mockAuthService = {
   register: jest.fn().mockResolvedValue({ message: 'Usuario registrado con éxito', userId: 1 }),
   login: jest.fn().mockResolvedValue({ access_token: 'jwt_token', user: { id: 1, email: 'test@test.com' } }),
+  loginWithGoogle: jest.fn().mockResolvedValue({ access_token: 'google_jwt_token', user: { id: 1, email: 'test@gmail.com' } }),
 };
 
 describe('AuthController', () => {
@@ -38,6 +39,20 @@ describe('AuthController', () => {
 
       expect(result).toEqual({ access_token: 'jwt_token', user: { id: 1, email: 'test@test.com' } });
       expect(mockAuthService.login).toHaveBeenCalledWith(dto);
+    });
+  });
+
+  describe('GET /auth/google/callback', () => {
+    it('debe redirigir al frontend con el token', async () => {
+      const mockReq = { user: { googleId: '123', email: 'test@gmail.com' } };
+      const mockRes = { redirect: jest.fn() };
+
+      await controller.googleAuthRedirect(mockReq as any, mockRes as any);
+
+      expect(mockAuthService.loginWithGoogle).toHaveBeenCalledWith(mockReq.user);
+      expect(mockRes.redirect).toHaveBeenCalledWith(
+        `${process.env.FRONTEND_URL}/auth/callback?token=google_jwt_token`,
+      );
     });
   });
 });
