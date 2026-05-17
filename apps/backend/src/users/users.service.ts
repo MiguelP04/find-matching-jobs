@@ -34,6 +34,15 @@ export class UsersService {
   }
 
   /**
+   * Busca un usuario por su googleId.
+   * @param googleId Google ID del usuario.
+   * @returns El usuario encontrado o null si no existe.
+   */
+  async findOneByGoogleId(googleId: string): Promise<User | null> {
+    return await this.usersRepository.findOne({ where: { googleId } });
+  }
+
+  /**
    * Busca un usuario por su ID único.
    * @param id ID del usuario.
    * @returns El usuario encontrado.
