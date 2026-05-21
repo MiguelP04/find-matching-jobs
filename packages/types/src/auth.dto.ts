@@ -4,6 +4,7 @@ import {
   IsString,
   MinLength,
   IsEnum,
+  IsOptional,
 } from "class-validator";
 
 export enum UserRole {
@@ -12,31 +13,32 @@ export enum UserRole {
 }
 
 export class RegisterDto {
-  @IsNotEmpty()
+  @IsNotEmpty({ message: "El nombre no puede estar vacío" })
   @IsString()
   nombre!: string;
 
-  @IsNotEmpty()
+  @IsNotEmpty({ message: "El apellido no puede estar vacío" })
   @IsString()
   apellido!: string;
 
-  @IsEmail()
+  @IsEmail({}, { message: "El email debe ser válido" })
   email!: string;
 
-  @IsNotEmpty()
+  @IsNotEmpty({ message: "La contraseña no puede estar vacía" })
   @IsString()
-  @MinLength(6)
+  @MinLength(6, { message: "La contraseña debe tener al menos 6 caracteres" })
   password!: string;
 
+  @IsOptional()
   @IsEnum(UserRole)
-  rol!: UserRole;
+  rol?: UserRole = UserRole.ESTUDIANTE;
 }
 
 export class LoginDto {
-  @IsEmail()
+  @IsEmail({}, { message: "El email debe ser válido" })
   email!: string;
 
-  @IsNotEmpty()
+  @IsNotEmpty({ message: "La contraseña no puede estar vacía" })
   @IsString()
   password!: string;
 }
