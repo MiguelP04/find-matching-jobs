@@ -3,11 +3,12 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/stores/authStore";
-import { Mail, Lock, LogIn, Eye, EyeOff } from "lucide-react";
+import { Mail, Lock, LogIn, Eye, EyeOff, GraduationCap } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import Image from "next/image";
 
 export default function AuthPage() {
   const router = useRouter();
@@ -43,7 +44,25 @@ export default function AuthPage() {
 
   return (
     <main className="flex min-h-screen">
-      <div className="hidden md:flex w-1/2 bg-blue-600" />
+      <div className="hidden md:flex w-1/2 relative overflow-hidden bg-secondary">
+        <Image
+          src="/auth_image.jpg"
+          alt="Auth Background"
+          fill
+          className="object-cover"
+          priority
+        />
+        <div className="absolute inset-0 bg-gradient-to-br from-secondary/95 to-primary/30" />
+        <div className="absolute inset-0 flex flex-col items-center justify-center text-white p-12">
+          <GraduationCap className="size-14 text-primary mb-4" />
+          <h2 className="text-3xl font-bold text-center leading-tight">
+            Encuentra tu próxima oportunidad
+          </h2>
+          <p className="text-base text-center mt-3 text-white/70 max-w-xs">
+            Conectamos estudiantes a empresas que buscan tu talento
+          </p>
+        </div>
+      </div>
 
       <div className="w-full md:w-1/2 flex items-center justify-center px-6 bg-white">
         <div className="w-full max-w-sm flex flex-col gap-6">
@@ -60,7 +79,7 @@ export default function AuthPage() {
             </TabsList>
 
             <div className="mt-6 text-center">
-              <h1 className="text-xl font-bold text-gray-900">
+              <h1 className="text-xl font-bold text-secondary">
                 {isRegister ? "Crear cuenta" : "Bienvenido de nuevo"}
               </h1>
               <p className="text-sm text-gray-500 mt-1">
