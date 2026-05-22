@@ -9,7 +9,7 @@ export class AuthService {
   constructor(
     private usersService: UsersService,
     private jwtService: JwtService,
-  ) {}
+  ) { }
 
   async register(registerDto: RegisterDto) {
     const userExists = await this.usersService.findOneByEmail(registerDto.email);
@@ -39,13 +39,20 @@ export class AuthService {
     if (!isPasswordValid) throw new UnauthorizedException('Credenciales inválidas');
 
     // Generar JWT
-    const payload = { sub: user.id, email: user.email, rol: user.rol };
-    
+    const payload = {
+      sub: user.id,
+      email: user.email,
+      rol: user.rol,
+      nombre: user.nombre,
+      apellido: user.apellido,
+    };
+
     return {
       access_token: this.jwtService.sign(payload),
       user: {
         id: user.id,
         nombre: user.nombre,
+        apellido: user.apellido,
         email: user.email,
         rol: user.rol,
       },
@@ -79,13 +86,20 @@ export class AuthService {
       });
     }
 
-    const payload = { sub: user.id, email: user.email, rol: user.rol };
+    const payload = {
+      sub: user.id,
+      email: user.email,
+      rol: user.rol,
+      nombre: user.nombre,
+      apellido: user.apellido,
+    };
 
     return {
       access_token: this.jwtService.sign(payload),
       user: {
         id: user.id,
         nombre: user.nombre,
+        apellido: user.apellido,
         email: user.email,
         rol: user.rol,
       },

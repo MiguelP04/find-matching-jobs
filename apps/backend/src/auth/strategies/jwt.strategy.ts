@@ -8,6 +8,8 @@ interface JwtTokenPayload {
   sub: number;
   email: string;
   rol: string;
+  nombre: string;
+  apellido: string;
 }
 
 @Injectable()

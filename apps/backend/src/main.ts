@@ -1,5 +1,5 @@
 import { NestFactory } from '@nestjs/core';
-import { ValidationPipe, ClassSerializerInterceptor } from '@nestjs/common';
+import { ValidationPipe, ClassSerializerInterceptor, BadRequestException } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import session from 'express-session';
 import helmet from 'helmet';
@@ -14,6 +14,14 @@ async function bootstrap() {
       whitelist: true,
       forbidNonWhitelisted: true,
       transform: true,
+      exceptionFactory: (errors) => {
+        const formatted = errors.map((e) => ({
+          field: e.property,
+          message: Object.values(e.constraints || {})[0],
+        }));
+        return new BadRequestException(formatted);
+
+      }
     }),
   );
 
