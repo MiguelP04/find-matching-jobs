@@ -1,6 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { useState, useMemo } from "react";
+import { classValidatorResolver } from "@hookform/resolvers/class-validator";
+import { RegisterDto, LoginDto } from "@find-matching-jobs/types";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/stores/authStore";
 import { Mail, Lock, LogIn, Eye, EyeOff, GraduationCap } from "lucide-react";
@@ -12,30 +15,28 @@ import Image from "next/image";
 
 export default function AuthPage() {
   const router = useRouter();
-  const { login, register, isLoading, error, fieldErrors, clearError } = useAuthStore();
+  const { login, register: registerUser, isLoading, error, clearError } = useAuthStore();
   const [isRegister, setIsRegister] = useState(false);
   const [remember, setRemember] = useState(false);
-  const [nombre, setNombre] = useState("");
-  const [apellido, setApellido] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
 
-  const getFieldError = (field: string) => fieldErrors.find((f) => f.field === field)?.message;
+  const resolver = useMemo(
+    () => classValidatorResolver(isRegister ? RegisterDto : LoginDto), [isRegister],
+  )
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const { register, handleSubmit, formState: { errors }, reset } = useForm<any>({ resolver })
+
+  const onSubmit = async (data: any) => {
     if (isRegister) {
-      await register(nombre, apellido, email, password);
+      const { nombre, apellido, email, password } = data
+      await registerUser(nombre, apellido, email, password)
       if (!useAuthStore.getState().error) {
         setIsRegister(false);
-        setNombre("");
-        setApellido("");
-        setEmail("");
-        setPassword("");
+        reset();
       }
     } else {
-      await login(email, password);
+      const { email, password } = data
+      await login(email, password)
       if (!useAuthStore.getState().error) {
         router.push("/");
       }
@@ -70,6 +71,7 @@ export default function AuthPage() {
             value={isRegister ? "register" : "login"}
             onValueChange={(value) => {
               setIsRegister(value === "register");
+              reset();
               clearError();
             }}
           >
@@ -89,35 +91,31 @@ export default function AuthPage() {
               </p>
             </div>
 
-            <form key={isRegister ? "register" : "login"} onSubmit={handleSubmit} className="mt-6 flex flex-col gap-4 animate-fade-up">
+            <form key={isRegister ? "register" : "login"} onSubmit={handleSubmit(onSubmit)} className="mt-6 flex flex-col gap-4 animate-fade-up">
               <TabsContent value="register" className="flex flex-col gap-4">
                 <div className="flex gap-3">
                   <div className="flex flex-1 flex-col gap-1.5">
                     <label className="text-sm font-medium text-gray-700">Nombre</label>
                     <Input
-                      name="nombre"
                       type="text"
                       placeholder="Nombre"
                       className="h-10"
-                      value={nombre}
-                      onChange={(e) => { clearError(); setNombre(e.target.value); }}
+                      {...register("nombre")}
                     />
-                    {getFieldError("nombre") && (
-                      <p className="text-xs text-red-500">{getFieldError("nombre")}</p>
+                    {errors.nombre && (
+                      <p className="text-xs text-red-500">{errors.nombre.message as string}</p>
                     )}
                   </div>
                   <div className="flex flex-1 flex-col gap-1.5">
                     <label className="text-sm font-medium text-gray-700">Apellido</label>
                     <Input
-                      name="apellido"
                       type="text"
                       placeholder="Apellido"
                       className="h-10"
-                      value={apellido}
-                      onChange={(e) => { clearError(); setApellido(e.target.value); }}
+                      {...register("apellido")}
                     />
-                    {getFieldError("apellido") && (
-                      <p className="text-xs text-red-500">{getFieldError("apellido")}</p>
+                    {errors.apellido && (
+                      <p className="text-xs text-red-500">{errors.apellido.message as string}</p>
                     )}
                   </div>
                 </div>
@@ -126,16 +124,14 @@ export default function AuthPage() {
                   <div className="relative">
                     <Mail className="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
                     <Input
-                      name="email"
                       type="email"
                       placeholder="tu@email.com"
                       className="h-10 pl-8"
-                      value={email}
-                      onChange={(e) => { clearError(); setEmail(e.target.value); }}
+                      {...register("email")}
                     />
                   </div>
-                  {getFieldError("email") && (
-                    <p className="text-xs text-red-500">{getFieldError("email")}</p>
+                  {errors.email && (
+                    <p className="text-xs text-red-500">{errors.email.message as string}</p>
                   )}
 
                 </div>
@@ -144,12 +140,10 @@ export default function AuthPage() {
                   <div className="relative">
                     <Lock className="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
                     <Input
-                      name="password"
                       type={showPassword ? "text" : "password"}
                       placeholder="••••••••••••"
                       className="h-10 pl-8 pr-8"
-                      value={password}
-                      onChange={(e) => { clearError(); setPassword(e.target.value); }}
+                      {...register("password")}
                     />
 
                     <button
@@ -160,8 +154,8 @@ export default function AuthPage() {
                       {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
                     </button>
                   </div>
-                  {getFieldError("password") && (
-                    <p className="text-xs text-red-500">{getFieldError("password")}</p>
+                  {errors.password && (
+                    <p className="text-xs text-red-500">{errors.password.message as string}</p>
                   )}
 
                 </div>
@@ -173,16 +167,14 @@ export default function AuthPage() {
                   <div className="relative">
                     <Mail className="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
                     <Input
-                      name="email"
                       type="email"
                       placeholder="tu@email.com"
                       className="h-10 pl-8"
-                      value={email}
-                      onChange={(e) => { clearError(); setEmail(e.target.value); }}
+                      {...register("email")}
                     />
                   </div>
-                  {getFieldError("email") && (
-                    <p className="text-xs text-red-500">{getFieldError("email")}</p>
+                  {errors.email && (
+                    <p className="text-xs text-red-500">{errors.email.message as string}</p>
                   )}
 
                 </div>
@@ -191,12 +183,10 @@ export default function AuthPage() {
                   <div className="relative">
                     <Lock className="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
                     <Input
-                      name="password"
                       type={showPassword ? "text" : "password"}
                       placeholder="••••••••••••"
                       className="h-10 pl-8 pr-8"
-                      value={password}
-                      onChange={(e) => { clearError(); setPassword(e.target.value); }}
+                      {...register("password")}
                     />
 
                     <button
@@ -208,8 +198,8 @@ export default function AuthPage() {
                     </button>
                   </div>
 
-                  {getFieldError("password") && (
-                    <p className="text-xs text-red-500">{getFieldError("password")}</p>
+                  {errors.password && (
+                    <p className="text-xs text-red-500">{errors.password.message as string}</p>
                   )}
 
                 </div>
@@ -230,7 +220,7 @@ export default function AuthPage() {
                 </div>
               )}
 
-              {error && fieldErrors.length === 0 && (
+              {error && (
                 <p className="text-sm text-red-500 text-center">{error}</p>
               )}
 

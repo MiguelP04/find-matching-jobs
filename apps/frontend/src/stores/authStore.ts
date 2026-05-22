@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { AuthResponseDto } from "@find-matching-jobs/types";
-import { api, ApiError, type FieldError } from "../lib/api";
+import { api } from "../lib/api";
 
 interface AuthState {
   user: AuthResponseDto["user"] | null;
@@ -9,7 +9,6 @@ interface AuthState {
   isAuthenticated: boolean;
   isLoading: boolean;
   error: string | null;
-  fieldErrors: FieldError[];
   login: (email: string, password: string) => Promise<void>;
   register: (nombre: string, apellido: string, email: string, password: string) => Promise<void>;
   setAuth: (auth: AuthResponseDto) => void;
@@ -25,18 +24,15 @@ export const useAuthStore = create<AuthState>()(
       isAuthenticated: false,
       isLoading: false,
       error: null,
-      fieldErrors: [],
 
       login: async (email, password) => {
-        set({ isLoading: true, error: null, fieldErrors: [] });
+        set({ isLoading: true, error: null });
         try {
           const res = await api.post<AuthResponseDto>("/auth/login", { email, password });
           set({ user: res.user, accessToken: res.access_token, isAuthenticated: true });
         } catch (e) {
-          const apiErr = e instanceof ApiError ? e : null;
           set({
-            error: (e as Error).message,
-            fieldErrors: apiErr?.fieldErrors ?? [],
+            error: (e as Error).message
           });
         } finally {
           set({ isLoading: false });
@@ -44,14 +40,12 @@ export const useAuthStore = create<AuthState>()(
       },
 
       register: async (nombre, apellido, email, password) => {
-        set({ isLoading: true, error: null, fieldErrors: [] });
+        set({ isLoading: true, error: null });
         try {
           await api.post("/auth/register", { nombre, apellido, email, password });
         } catch (e) {
-          const apiErr = e instanceof ApiError ? e : null;
           set({
-            error: (e as Error).message,
-            fieldErrors: apiErr?.fieldErrors ?? [],
+            error: (e as Error).message
           });
         } finally {
           set({ isLoading: false });
@@ -74,7 +68,6 @@ export const useAuthStore = create<AuthState>()(
 
       clearError: () => set({
         error: null,
-        fieldErrors: [],
       }),
     }),
     {

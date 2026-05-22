@@ -28,8 +28,8 @@ function CallbackContent() {
         id: payload.sub,
         email: payload.email,
         rol: payload.rol,
-        nombre: '',
-        apellido: '',
+        nombre: payload.nombre,
+        apellido: payload.apellido,
       },
     })
     router.push('/')
