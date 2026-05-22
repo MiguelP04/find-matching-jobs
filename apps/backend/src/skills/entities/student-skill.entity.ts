@@ -1,6 +1,13 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, Index } from 'typeorm'
-import { Profile } from '../../profiles/entities/profile.entity'
-import { Skill } from './skill.entity'
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  ManyToOne,
+  Index,
+  JoinColumn,
+} from 'typeorm';
+import { Profile } from '../../profiles/entities/profile.entity';
+import { Skill } from './skill.entity';
 
 export enum NivelSkill {
   BASICO = 'Básico',
@@ -12,25 +19,27 @@ export enum NivelSkill {
 @Index(['student_id', 'skill_id'], { unique: true })
 export class StudentSkill {
   @PrimaryGeneratedColumn()
-  id: number
+  id: number;
 
   @Index()
   @Column()
-  student_id: number
+  student_id: number;
 
   @Index()
   @Column()
-  skill_id: number
+  skill_id: number;
 
   @Column({
     type: 'enum',
     enum: NivelSkill,
   })
-  nivel: NivelSkill
+  nivel: NivelSkill;
 
   @ManyToOne(() => Profile, (profile) => profile.studentSkills)
-  student: Profile
+  @JoinColumn({ name: 'student_id' })
+  student: Profile;
 
   @ManyToOne(() => Skill, (skill) => skill.studentSkills)
-  skill: Skill
+  @JoinColumn({ name: 'skill_id' })
+  skill: Skill;
 }
