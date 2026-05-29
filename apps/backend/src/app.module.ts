@@ -9,8 +9,9 @@ import { UsersModule } from './users/users.module';
 import { ProfilesModule } from './profiles/profiles.module';
 import { SkillsModule } from './skills/skills.module';
 import { JobsModule } from './jobs/jobs.module';
+import { JsearchModule } from './jsearch/jsearch.module';
 import { MatchingModule } from './matching/matching.module';
-import { AuthModule } from './auth/auth.module'; // <--- 1. Importa el módulo
+import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [
@@ -30,11 +31,12 @@ import { AuthModule } from './auth/auth.module'; // <--- 1. Importa el módulo
       autoLoadEntities: true,
       synchronize: false,
     }),
-    AuthModule, // <--- 2. Agrégalo aquí
+    AuthModule,
     UsersModule,
     ProfilesModule,
     SkillsModule,
     JobsModule,
+    JsearchModule,
     MatchingModule,
   ],
   controllers: [AppController],
@@ -46,4 +48,4 @@ import { AuthModule } from './auth/auth.module'; // <--- 1. Importa el módulo
     },
   ],
 })
-export class AppModule {}
+export class AppModule { }
