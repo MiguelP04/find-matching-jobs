@@ -2,7 +2,8 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ProfilesService } from './profiles.service';
-import { Profile, Modalidad } from './entities/profile.entity';
+import { Modalidad } from '@find-matching-jobs/types';
+import { Profile } from './entities/profile.entity';
 import { ConflictException, NotFoundException } from '@nestjs/common';
 
 const mockProfile: Profile = {

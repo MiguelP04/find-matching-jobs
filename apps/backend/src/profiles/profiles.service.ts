@@ -1,27 +1,32 @@
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { DeepPartial, Repository } from 'typeorm';
 import { Profile } from './entities/profile.entity';
-import { CreateProfileDto } from './dto/create-profile.dto';
-import { UpdateProfileDto } from './dto/update-profile.dto';
+import { CreateProfileDto, UpdateProfileDto } from '@find-matching-jobs/types';
 
 @Injectable()
 export class ProfilesService {
   constructor(
     @InjectRepository(Profile)
     private profilesRepository: Repository<Profile>,
-  ) {}
+  ) { }
 
-  async create(userId: number, createProfileDto: CreateProfileDto): Promise<Profile> {
-    const existing = await this.profilesRepository.findOne({ where: { user_id: userId } });
+  async create(
+    userId: number,
+    createProfileDto: CreateProfileDto,
+  ): Promise<Profile> {
+    const existing = await this.profilesRepository.findOne({
+      where: { user_id: userId },
+    });
     if (existing) {
       throw new ConflictException('El usuario ya tiene un perfil');
     }
 
-    const profile = this.profilesRepository.create({
+    const data: DeepPartial<Profile> = {
       ...createProfileDto,
       user_id: userId,
-    });
+    };
+    const profile = this.profilesRepository.create(data);
     return await this.profilesRepository.save(profile);
   }
 
@@ -36,7 +41,10 @@ export class ProfilesService {
     return profile;
   }
 
-  async update(userId: number, updateProfileDto: UpdateProfileDto): Promise<Profile> {
+  async update(
+    userId: number,
+    updateProfileDto: UpdateProfileDto,
+  ): Promise<Profile> {
     const profile = await this.findByUserId(userId);
     Object.assign(profile, updateProfileDto);
     return await this.profilesRepository.save(profile);

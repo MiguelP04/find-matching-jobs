@@ -1,8 +1,7 @@
 import { Controller, Get, Post, Patch, Body, UseGuards, Request } from '@nestjs/common';
 import { Request as ExpressRequest } from 'express';
 import { ProfilesService } from './profiles.service';
-import { CreateProfileDto } from './dto/create-profile.dto';
-import { UpdateProfileDto } from './dto/update-profile.dto';
+import { CreateProfileDto, UpdateProfileDto } from '@find-matching-jobs/types';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { SanitizationPipe } from '../common/pipes/sanitization.pipe';
 import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';

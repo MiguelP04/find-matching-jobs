@@ -3,7 +3,7 @@ import { ProfilesController } from './profiles.controller';
 import { ProfilesService } from './profiles.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { UserRole } from '../users/entities/user.entity';
-import { Modalidad } from './entities/profile.entity';
+import { Modalidad } from '@find-matching-jobs/types';
 
 const mockProfile = {
   id: 1,

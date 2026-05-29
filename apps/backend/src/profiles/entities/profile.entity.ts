@@ -3,11 +3,7 @@ import { User } from '../../users/entities/user.entity'
 import { StudentSkill } from '../../skills/entities/student-skill.entity'
 import { MatchResult } from '../../matching/entities/match-result.entity'
 
-export enum Modalidad {
-  REMOTO = 'remoto',
-  PRESENCIAL = 'presencial',
-  HIBRIDO = 'hibrido',
-}
+import { Modalidad } from '@find-matching-jobs/types';
 
 @Entity('profiles')
 export class Profile {
