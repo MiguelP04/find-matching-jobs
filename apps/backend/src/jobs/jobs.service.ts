@@ -1,8 +1,9 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, ILike, MoreThanOrEqual } from 'typeorm';
+import { Repository, ILike, MoreThanOrEqual, In } from 'typeorm';
 import { subDays } from 'date-fns';
 import { Job } from './entities/job.entity';
+import { JobData } from './types/job-data';
 
 @Injectable()
 export class JobsService {
@@ -28,7 +29,7 @@ export class JobsService {
     return job;
   }
 
-  async search(query: string, location?: string) {
+  async search(query: string, location?: string, page = 1, limit = 10) {
     const thirtyDaysAgo = subDays(new Date(), 30);
     const where: any[] = [
       { titulo: ILike(`%${query}%`), fecha_publicacion: MoreThanOrEqual(thirtyDaysAgo) },
@@ -40,6 +41,31 @@ export class JobsService {
       where.forEach((w) => (w.ubicacion = ILike(`%${location}%`)));
     }
 
-    return this.jobsRepository.find({ where, order: { fecha_publicacion: 'DESC' } });
+    const [jobs, total] = await this.jobsRepository.findAndCount({
+      where,
+      skip: (page - 1) * limit,
+      take: limit,
+      order: { fecha_publicacion: 'DESC' },
+    });
+    return { jobs, total, page, limit };
+  }
+
+  async saveJobs(jobs: JobData[]): Promise<{ inserted: number; skipped: number }> {
+    const externalIds = jobs.map((j) => j.external_id).filter(Boolean);
+    if (externalIds.length === 0) return { inserted: 0, skipped: 0 };
+
+    const existing = await this.jobsRepository.find({
+      where: { external_id: In(externalIds) },
+      select: ['external_id'],
+    });
+    const existingSet = new Set(existing.map((j) => j.external_id));
+
+    const newJobs = jobs.filter((j) => !existingSet.has(j.external_id));
+
+    if (newJobs.length > 0) {
+      await this.jobsRepository.save(newJobs);
+    }
+
+    return { inserted: newJobs.length, skipped: existingSet.size };
   }
 }
