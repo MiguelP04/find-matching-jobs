@@ -1,0 +1,123 @@
+SCHEMA - Backend (apps/backend)
+
+1. Resumen
+- Proyecto: backend de Find Matching Jobs.
+- Stack: NestJS (v11), TypeScript, TypeORM, PostgreSQL, Passport (JWT + Google OAuth).
+- Propósito: API REST para gestionar usuarios, perfiles, skills, jobs y la lógica de matching entre estudiantes y vacantes.
+
+2. Estructura de ficheros (alto nivel)
+- package.json                  -> scripts y dependencias
+- src/
+  - main.ts                     -> bootstrap de la app
+  - app.module.ts               -> módulo raíz
+  - app.controller.ts / .spec.ts
+  - auth/
+    - auth.module.ts
+    - auth.controller.ts        -> endpoints de auth (login/register, OAuth redirect/callback)
+    - auth.service.ts           -> lógica de autenticación (tokens, validaciones)
+    - strategies/
+      - jwt.strategy.ts         -> JWT strategy (Passport)
+      - google.strategy.ts      -> Google OAuth strategy
+    - guards/                    -> `jwt-auth.guard.ts`, `roles.guard.ts`
+    - decorators/                -> `current-user.decorator.ts`, `roles.decorator.ts`
+    - interfaces/                -> `jwt-payload.interface.ts`
+  - users/
+    - users.module.ts
+    - users.controller.ts
+    - users.service.ts
+    - entities/user.entity.ts
+    - dto/
+  - profiles/
+    - profiles.module.ts
+    - profiles.controller.ts
+    - profiles.service.ts
+    - entities/profile.entity.ts
+    - dto/                      -> `create-profile.dto.ts`, `update-profile.dto.ts`
+  - skills/
+    - skills.module.ts
+    - skills.controller.ts
+    - skills.service.ts
+    - entities/                 -> `skill.entity.ts`, `student-skill.entity.ts`
+  - jobs/
+    - jobs.module.ts
+    - jobs.controller.ts
+    - jobs.service.ts
+    - entities/job.entity.ts
+  - matching/
+    - matching.module.ts
+    - entities/match-result.entity.ts
+  - config/
+    - data-source.ts            -> TypeORM data source config (used by migration scripts)
+  - migrations/
+    - 1746400000000-InitialSchema.ts
+    - 1779027264572-AddGoogleOAuthFields.ts
+  - common/                     -> pipes, guards, decorators shared
+  - scripts/
+    - create-db.js              -> helper para crear DB local
+  - test/                       -> e2e tests
+
+3. Dependencias y herramientas clave
+- NestJS, @nestjs/config, @nestjs/typeorm, @nestjs/jwt, passport, passport-jwt, passport-google-oauth20
+- TypeORM con `typeorm-ts-node-commonjs` para manejar migrations desde scripts
+- PostgreSQL (`pg`), bcrypt, class-validator / class-transformer
+- Dev: Jest, supertest, ts-jest, eslint, prettier
+
+4. Scripts principales (desde `package.json`)
+- `start:dev` - arranca en modo desarrollo (watch)
+- `build` / `start:prod` - build y run en producción
+- `db:create` - `node scripts/create-db.js` (crea DB localmente según configuración)
+- `migration:generate` / `migration:run` / `migration:revert` - comandos TypeORM para migraciones
+- Tests: `test`, `test:e2e`, `test:watch`, `test:cov`
+
+5. Base de datos y migraciones
+- Usa PostgreSQL. Configuración de conexión en `src/config/data-source.ts` y variables de entorno en `.env` / `.env.example`.
+- Migraciones presentes: `1746400000000-InitialSchema.ts` (esqueleto inicial) y `1779027264572-AddGoogleOAuthFields.ts` (añade campos para OAuth).
+
+6. Autenticación y autorización
+- Passport con JWT: `jwt.strategy.ts` y `passport-jwt` para validar tokens en guardias (`jwt-auth.guard.ts`).
+- Google OAuth: `passport-google-oauth20` con `google.strategy.ts` y rutas para iniciar OAuth y callback.
+- Roles: `roles.decorator.ts` y `roles.guard.ts` para protección basada en roles.
+
+7. Endpoints y contratos esperados (resumen)
+- Auth
+  - POST `/auth/login` -> login con email/password (devuelve `AuthResponseDto` con `access_token` y `user`).
+  - POST `/auth/register` -> registro de usuario.
+  - GET `/auth/google` -> iniciar OAuth con Google (redirect)
+  - GET `/auth/google/callback` -> callback de OAuth (posible sesión/creación de usuario)
+- Users
+  - CRUD / endpoints para gestión de usuarios en `users.controller.ts`.
+- Profiles
+  - Endpoints para crear/actualizar perfiles (`profiles.controller.ts`).
+- Skills, Jobs, Matching
+  - Endpoints en sus respectivos módulos; matching ejecuta la lógica para emparejar candidatos y vacantes.
+
+8. Tipos y contrato compartido
+- El backend consume/expone tipos compartidos en `@find-matching-jobs/types` (paquete workspace). Asegúrate que los DTOs del backend coincidan con ese paquete (ej. `AuthResponseDto`, `RegisterDto`, `LoginDto`).
+
+9. Tests
+- Hay tests unitarios y e2e: `test/app.e2e-spec.ts`, varios `.spec.ts` en módulos. Usa `jest` y `supertest`.
+
+10. Variables de entorno importantes
+- `.env` / `.env.example` incluyen (pero revisar archivos):
+  - `DATABASE_URL` (Postgres)
+  - `JWT_SECRET` (firma JWT)
+  - `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_CALLBACK_URL` (OAuth)
+  - Otras variables de configuración (ver `apps/backend/README.md` o `.env.example`).
+
+11. Riesgos y puntos a validar
+- Sincronización DTOs: Asegurar que `@find-matching-jobs/types` coincide con las respuestas y requests del backend.
+- Migraciones: verificar que las migraciones aplicadas en entornos coinciden con el esquema actual.
+- Seguridad: revisar expiración y almacenamiento de `access_token`, uso de `https` y configuración de CORS/helmet.
+- OAuth: confirmar URLs/redirects correctos y manejo de usuarios duplicados.
+
+12. Recomendaciones y próximos pasos
+1) Verificar `.env` local y credenciales OAuth antes de probar integración frontend.
+2) Ejecutar migraciones locales: `pnpm --filter ./apps/backend run migration:run` o desde `apps/backend`.
+3) Añadir endpoints faltantes en frontend (matching, jobs) y pruebas e2e que cubran los principales flujos (registro, login, matching).
+4) Documentar API (OpenAPI/Swagger): `@nestjs/swagger` ya instalado; generar spec y exponer UI para facilitar integración.
+
+13. Archivos clave revisados
+- `src/auth/auth.controller.ts`, `src/auth/auth.service.ts`, `src/config/data-source.ts`, `src/migrations/*`, `src/users/*`, `src/profiles/*`, `src/skills/*`, `src/jobs/*`, `src/matching/*`.
+
+---
+Archivo generado automáticamente. Dime si quieres que lo convierta a `README.md`, genere un OpenAPI básico, o añada un script `db:reset` seguro para desarrollo.

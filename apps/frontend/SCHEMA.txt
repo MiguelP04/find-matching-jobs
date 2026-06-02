@@ -1,0 +1,88 @@
+SCHEMA - Frontend (apps/frontend)
+
+1. Resumen
+- Proyecto: frontend de Find Matching Jobs.
+- Stack: Next.js (App Router, v16), React 19, TypeScript, Tailwind CSS v4.
+- Propósito: UI pública y autenticación para conectar estudiantes con empresas y mostrar emparejamientos.
+
+2. Estructura de ficheros (alto nivel)
+- package.json
+- src/
+  - app/
+    - layout.tsx                -> Root layout (fonts, body wrapper)
+    - page.tsx                  -> Página principal (plantilla por defecto)
+    - auth/
+      - page.tsx                -> Página de autenticación (login/register + Google OAuth)
+      - callback/page.tsx       -> Callback (OAuth) placeholder
+  - components/
+    - ui/
+      - button.tsx              -> Botón reutilizable (usa @base-ui/react y cva)
+      - checkbox.tsx
+      - input.tsx
+      - tabs.tsx
+  - lib/
+    - api.ts                    -> Cliente HTTP centralizado (fetch + ApiError)
+    - utils.ts                  -> Utilidades varias (cn, clases...)
+  - stores/
+    - authStore.ts              -> Zustand persistente para auth (login, register, setAuth, logout)
+    - index.ts
+
+3. Rutas / Pages relevantes
+- `/` (index) - `src/app/page.tsx` (plantilla, por ahora informativa).
+- `/auth` - `src/app/auth/page.tsx` (login/register UI; usa `react-hook-form` y `class-validator` resolver).
+- `/auth/callback` - OAuth callback (archivo presente).
+
+4. Flujo de datos y estado
+- `src/lib/api.ts` define `api.get` y `api.post` con manejo de errores:
+  - Usa `NEXT_PUBLIC_API_URL` o `http://localhost:3000` por defecto.
+  - Lanza `ApiError` con `FieldError[]` cuando el backend devuelve errors estructurados.
+- `src/stores/authStore.ts`:
+  - Persistencia en `localStorage` (middleware `persist` de zustand).
+  - Guarda `user`, `accessToken`, `isAuthenticated`.
+  - Métodos: `login(email,password)` -> POST `/auth/login` ; `register(...)` -> POST `/auth/register`.
+  - `setAuth(auth)`, `logout()` y `clearError()`.
+
+5. DTOs y tipado
+- El frontend consume tipos desde el paquete compartido `@find-matching-jobs/types` (p. ej. `LoginDto`, `RegisterDto`, `AuthResponseDto`).
+- Importante: el backend debe respetar exactamente esas formas para interoperabilidad.
+
+6. Endpoints usados/esperados (backend)
+- POST `/auth/login` -> responde `AuthResponseDto` con `access_token` y `user`.
+- POST `/auth/register` -> crea usuario (respuesta simple o success).
+- GET/redirect `/auth/google` -> inicia OAuth con Google.
+- Otros endpoints pendientes: matching, jobs, profiles (no implementados en frontend aún).
+
+7. Variables de entorno
+- `NEXT_PUBLIC_API_URL` : URL base del backend (ej. `http://localhost:3000`).
+  - Si no está definida, `src/lib/api.ts` usa `http://localhost:3000`.
+
+8. Scripts y comandos
+- `pnpm dev` -> `next dev -p 3001` (desde `apps/frontend` o con pnpm workspaces filter).
+- Recomendación para arrancar local:
+  - Desde la raíz: `pnpm install`
+  - `pnpm --filter ./apps/frontend dev`
+  - O: `cd apps/frontend && pnpm install && pnpm run dev`
+
+9. Dependencias principales
+- runtime: `next`, `react`, `react-dom`, `zustand`, `react-hook-form`, `class-variance-authority`, `@base-ui/react`, `lucide-react`, `shadcn`.
+- dev: `tailwindcss`, `eslint`, `typescript`.
+
+10. Estado de implementación
+- Scaffolding y utilidades listas (API client, auth store, componentes base).
+- Auth UI implementada en `/auth` y conectada al `useAuthStore`.
+- Páginas de negocio (matching, listados, dashboard, perfiles) aún por crear.
+
+11. Riesgos y recomendaciones rápidas
+- Configurar `NEXT_PUBLIC_API_URL` en `.env.local` antes de pruebas de integración.
+- Asegurar que el backend cumple `AuthResponseDto` y estructuras de error esperadas (arrays con `field` y `message`).
+- Robustecer `api.ts` para manejar respuestas no-JSON en errores.
+- Añadir protección de rutas (middleware o server components) para rutas privadas.
+
+12. Próximos pasos sugeridos
+1) Añadir `.env.local.example` con `NEXT_PUBLIC_API_URL`.
+2) Crear componentes/páginas para `matching` y `jobs` que consuman el backend.
+3) Añadir guardias/redirecciones según `useAuthStore.isAuthenticated`.
+4) Mejorar el manejo de errores de `src/lib/api.ts` y mostrar `fieldErrors` en formularios.
+
+---
+Archivo generado automáticamente por revisión; si quieres lo adapto a un formato más técnico (diagramas, endpoints OpenAPI, o un README detallado por secciones).
