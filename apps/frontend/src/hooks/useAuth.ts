@@ -15,5 +15,6 @@ export function useAuth() {
     // Si no se ha hidratado, forzamos false/true temporalmente para el SSR
     isAuthenticated: isHydrated ? store.isAuthenticated : false,
     isLoading: store.isLoading || !isHydrated,
+    isHydrated,
   };
 }

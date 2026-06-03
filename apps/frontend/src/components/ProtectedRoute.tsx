@@ -15,7 +15,7 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
   useEffect(() => {
     // Si terminó de cargar y no está autenticado, va para el login
     if (!isLoading && !isAuthenticated) {
-      router.push("/auth");
+      router.replace("/auth");
     }
   }, [isAuthenticated, isLoading, router]);
 

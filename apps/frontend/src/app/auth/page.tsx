@@ -1,11 +1,13 @@
 "use client";
 
+import "reflect-metadata";
 import { useForm } from "react-hook-form";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { classValidatorResolver } from "@hookform/resolvers/class-validator";
 import { RegisterDto, LoginDto } from "@find-matching-jobs/types";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/stores/authStore";
+import { useAuth } from "@/hooks/useAuth";
 import { Mail, Lock, LogIn, Eye, EyeOff, GraduationCap } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -21,7 +23,9 @@ export default function AuthPage() {
     isLoading,
     error,
     clearError,
-  } = useAuthStore();
+    isAuthenticated,
+    isHydrated,
+  } = useAuth();
   const [isRegister, setIsRegister] = useState(false);
   const [remember, setRemember] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -38,6 +42,12 @@ export default function AuthPage() {
     reset,
   } = useForm<any>({ resolver });
 
+  useEffect(() => {
+    if (!isLoading && isAuthenticated) {
+      router.replace("/dashboard");
+    }
+  }, [isLoading, isAuthenticated, router]);
+
   const onSubmit = async (data: any) => {
     if (isRegister) {
       const { nombre, apellido, email, password } = data;
@@ -50,10 +60,14 @@ export default function AuthPage() {
       const { email, password } = data;
       await login(email, password);
       if (!useAuthStore.getState().error) {
-        router.push("/dashboard");
+        router.replace("/dashboard");
       }
     }
   };
+
+  if (!isHydrated || isAuthenticated) {
+    return null;
+  }
 
   return (
     <main className="flex min-h-screen">
