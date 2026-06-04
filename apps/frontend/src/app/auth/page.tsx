@@ -1,11 +1,13 @@
 "use client";
 
+import "reflect-metadata";
 import { useForm } from "react-hook-form";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { classValidatorResolver } from "@hookform/resolvers/class-validator";
 import { RegisterDto, LoginDto } from "@find-matching-jobs/types";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/stores/authStore";
+import { useAuth } from "@/hooks/useAuth";
 import { Mail, Lock, LogIn, Eye, EyeOff, GraduationCap } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -15,33 +17,57 @@ import Image from "next/image";
 
 export default function AuthPage() {
   const router = useRouter();
-  const { login, register: registerUser, isLoading, error, clearError } = useAuthStore();
+  const {
+    login,
+    register: registerUser,
+    isLoading,
+    error,
+    clearError,
+    isAuthenticated,
+    isHydrated,
+  } = useAuth();
   const [isRegister, setIsRegister] = useState(false);
   const [remember, setRemember] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
   const resolver = useMemo(
-    () => classValidatorResolver(isRegister ? RegisterDto : LoginDto), [isRegister],
-  )
+    () => classValidatorResolver(isRegister ? RegisterDto : LoginDto),
+    [isRegister],
+  );
 
-  const { register, handleSubmit, formState: { errors }, reset } = useForm<any>({ resolver })
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+    reset,
+  } = useForm<any>({ resolver });
+
+  useEffect(() => {
+    if (!isLoading && isAuthenticated) {
+      router.replace("/dashboard");
+    }
+  }, [isLoading, isAuthenticated, router]);
 
   const onSubmit = async (data: any) => {
     if (isRegister) {
-      const { nombre, apellido, email, password } = data
-      await registerUser(nombre, apellido, email, password)
+      const { nombre, apellido, email, password } = data;
+      await registerUser({ nombre, apellido, email, password });
       if (!useAuthStore.getState().error) {
         setIsRegister(false);
         reset();
       }
     } else {
-      const { email, password } = data
-      await login(email, password)
+      const { email, password } = data;
+      await login(email, password);
       if (!useAuthStore.getState().error) {
-        router.push("/");
+        router.replace("/dashboard");
       }
     }
   };
+
+  if (!isHydrated || isAuthenticated) {
+    return null;
+  }
 
   return (
     <main className="flex min-h-screen">
@@ -91,11 +117,17 @@ export default function AuthPage() {
               </p>
             </div>
 
-            <form key={isRegister ? "register" : "login"} onSubmit={handleSubmit(onSubmit)} className="mt-6 flex flex-col gap-4 animate-fade-up">
+            <form
+              key={isRegister ? "register" : "login"}
+              onSubmit={handleSubmit(onSubmit)}
+              className="mt-6 flex flex-col gap-4 animate-fade-up"
+            >
               <TabsContent value="register" className="flex flex-col gap-4">
                 <div className="flex gap-3">
                   <div className="flex flex-1 flex-col gap-1.5">
-                    <label className="text-sm font-medium text-gray-700">Nombre</label>
+                    <label className="text-sm font-medium text-gray-700">
+                      Nombre
+                    </label>
                     <Input
                       type="text"
                       placeholder="Nombre"
@@ -103,11 +135,15 @@ export default function AuthPage() {
                       {...register("nombre")}
                     />
                     {errors.nombre && (
-                      <p className="text-xs text-red-500">{errors.nombre.message as string}</p>
+                      <p className="text-xs text-red-500">
+                        {errors.nombre.message as string}
+                      </p>
                     )}
                   </div>
                   <div className="flex flex-1 flex-col gap-1.5">
-                    <label className="text-sm font-medium text-gray-700">Apellido</label>
+                    <label className="text-sm font-medium text-gray-700">
+                      Apellido
+                    </label>
                     <Input
                       type="text"
                       placeholder="Apellido"
@@ -115,12 +151,16 @@ export default function AuthPage() {
                       {...register("apellido")}
                     />
                     {errors.apellido && (
-                      <p className="text-xs text-red-500">{errors.apellido.message as string}</p>
+                      <p className="text-xs text-red-500">
+                        {errors.apellido.message as string}
+                      </p>
                     )}
                   </div>
                 </div>
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-sm font-medium text-gray-700">Email</label>
+                  <label className="text-sm font-medium text-gray-700">
+                    Email
+                  </label>
                   <div className="relative">
                     <Mail className="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
                     <Input
@@ -131,12 +171,15 @@ export default function AuthPage() {
                     />
                   </div>
                   {errors.email && (
-                    <p className="text-xs text-red-500">{errors.email.message as string}</p>
+                    <p className="text-xs text-red-500">
+                      {errors.email.message as string}
+                    </p>
                   )}
-
                 </div>
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-sm font-medium text-gray-700">Contraseña</label>
+                  <label className="text-sm font-medium text-gray-700">
+                    Contraseña
+                  </label>
                   <div className="relative">
                     <Lock className="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
                     <Input
@@ -151,19 +194,26 @@ export default function AuthPage() {
                       onClick={() => setShowPassword(!showPassword)}
                       className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                     >
-                      {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                      {showPassword ? (
+                        <EyeOff className="size-4" />
+                      ) : (
+                        <Eye className="size-4" />
+                      )}
                     </button>
                   </div>
                   {errors.password && (
-                    <p className="text-xs text-red-500">{errors.password.message as string}</p>
+                    <p className="text-xs text-red-500">
+                      {errors.password.message as string}
+                    </p>
                   )}
-
                 </div>
               </TabsContent>
 
               <TabsContent value="login" className="flex flex-col gap-4">
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-sm font-medium text-gray-700">Email</label>
+                  <label className="text-sm font-medium text-gray-700">
+                    Email
+                  </label>
                   <div className="relative">
                     <Mail className="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
                     <Input
@@ -174,12 +224,15 @@ export default function AuthPage() {
                     />
                   </div>
                   {errors.email && (
-                    <p className="text-xs text-red-500">{errors.email.message as string}</p>
+                    <p className="text-xs text-red-500">
+                      {errors.email.message as string}
+                    </p>
                   )}
-
                 </div>
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-sm font-medium text-gray-700">Contraseña</label>
+                  <label className="text-sm font-medium text-gray-700">
+                    Contraseña
+                  </label>
                   <div className="relative">
                     <Lock className="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
                     <Input
@@ -194,14 +247,19 @@ export default function AuthPage() {
                       onClick={() => setShowPassword(!showPassword)}
                       className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                     >
-                      {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                      {showPassword ? (
+                        <EyeOff className="size-4" />
+                      ) : (
+                        <Eye className="size-4" />
+                      )}
                     </button>
                   </div>
 
                   {errors.password && (
-                    <p className="text-xs text-red-500">{errors.password.message as string}</p>
+                    <p className="text-xs text-red-500">
+                      {errors.password.message as string}
+                    </p>
                   )}
-
                 </div>
               </TabsContent>
 
@@ -210,7 +268,9 @@ export default function AuthPage() {
                   <label className="flex items-center gap-2 cursor-pointer text-gray-600">
                     <Checkbox
                       checked={remember}
-                      onCheckedChange={(checked) => setRemember(checked === true)}
+                      onCheckedChange={(checked) =>
+                        setRemember(checked === true)
+                      }
                     />
                     Recordarme
                   </label>
