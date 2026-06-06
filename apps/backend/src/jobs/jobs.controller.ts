@@ -5,9 +5,10 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { JsearchService } from '../jsearch/jsearch.service';
 import { JobsService } from './jobs.service';
-import { PaginationDto } from '@find-matching-jobs/types';
+import { PaginationDto, SearchJobsDto,  UserRole } from '@find-matching-jobs/types';
 import { SearchJobsDto } from './dto/search-jobs.dto';
 import { UserRole } from '@find-matching-jobs/types';
+
 
 @Controller('jobs')
 @ApiTags('jobs')
@@ -26,15 +27,16 @@ export class JobsController {
   @Get('search')
   @ApiOperation({ summary: 'Buscar vacantes en DB local' })
   searchLocal(@Query() searchDto: SearchJobsDto) {
-    return this.jobsService.search(searchDto.query, searchDto.location);
+    return this.jobsService.search(searchDto.query, searchDto.location, searchDto.page, searchDto.limit);
   }
 
   @Post('sync')
   @Roles(UserRole.ADMIN)
   @UseGuards(JwtAuthGuard, RolesGuard)
   async sync(@Query() searchDto: SearchJobsDto) {
-    const result = await this.jsearchService.syncJobs(searchDto.query, searchDto.location);
-    return result;
+    const jobs = await this.jsearchService.fetchJobs(searchDto.query, searchDto.location);
+    const result = await this.jobsService.saveJobs(jobs);
+    return { provider: 'jsearch', ...result };
   }
 
   @Get(':id')

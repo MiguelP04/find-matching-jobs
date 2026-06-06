@@ -1,9 +1,7 @@
 import { Injectable, Logger, InternalServerErrorException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In } from 'typeorm';
 import axios from 'axios';
-import { Job } from '../jobs/entities/job.entity';
+import { JobData } from '../jobs/types/job-data';
 
 @Injectable()
 export class JsearchService {
@@ -11,15 +9,11 @@ export class JsearchService {
   private readonly apiKey: string;
   private readonly baseUrl = 'https://jsearch.p.rapidapi.com';
 
-  constructor(
-    @InjectRepository(Job)
-    private readonly JobsRepository: Repository<Job>,
-    configService: ConfigService,
-  ) {
+  constructor(configService: ConfigService) {
     this.apiKey = configService.getOrThrow<string>('JSEARCH_API_KEY');
   }
 
-  async syncJobs(query: string, location?: string) {
+  async fetchJobs(query: string, location?: string): Promise<JobData[]> {
     try {
       const params: Record<string, string | number> = {
         query: location ? `${query} in ${location}` : query,
@@ -37,37 +31,18 @@ export class JsearchService {
         timeout: 30000,
       });
 
-      const jobs = data.data ?? [];
-      const externalIds = jobs.map((j: any) => j.job_id).filter(Boolean);
-
-      if (externalIds.length === 0) return { inserted: 0, skipped: 0 };
-
-      const existing = await this.JobsRepository.find({
-        where: { external_id: In(externalIds) },
-        select: ['external_id'],
-      });
-      const existingSet = new Set(existing.map((j) => j.external_id));
-
-      const newJobs = jobs
-        .filter((j: any) => !existingSet.has(j.job_id))
-        .map((j: any) => ({
-          external_id: j.job_id,
-          titulo: j.job_title,
-          empresa: j.employer_name,
-          descripcion: j.job_description ?? '',
-          ubicacion: [j.job_city, j.job_state, j.job_country].filter(Boolean).join(', '),
-          url_postulacion: j.job_apply_link ?? '',
-          fecha_publicacion: new Date(j.job_posted_at_timestamp * 1000),
-        }));
-
-      if (newJobs.length > 0) {
-        await this.JobsRepository.save(newJobs);
-      }
-
-      return { inserted: newJobs.length, skipped: existingSet.size };
+      return (data.data ?? []).map((j: any) => ({
+        external_id: j.job_id,
+        titulo: j.job_title,
+        empresa: j.employer_name,
+        descripcion: j.job_description ?? '',
+        ubicacion: [j.job_city, j.job_state, j.job_country].filter(Boolean).join(', '),
+        url_postulacion: j.job_apply_link ?? '',
+        fecha_publicacion: new Date(j.job_posted_at_timestamp * 1000),
+      }));
     } catch (error: any) {
-      this.logger.error(`JSearch sync error: ${error.message}`);
-      throw new InternalServerErrorException('Error al sincronizar vacantes');
+      this.logger.error(`JSearch API error: ${error.message}`);
+      throw new InternalServerErrorException('Error al obtener vacantes de JSearch');
     }
   }
 
