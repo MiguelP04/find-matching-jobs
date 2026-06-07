@@ -11,9 +11,11 @@ export interface FieldError {
 }
 
 export class ApiError extends Error {
+  status: number
   fieldErrors: FieldError[]
-  constructor(message: string, fieldErrors: FieldError[]) {
+  constructor(message: string, status: number, fieldErrors: FieldError[]) {
     super(message)
+    this.status = status
     this.fieldErrors = fieldErrors
   }
 }
@@ -42,12 +44,14 @@ async function request<T>(method: string, path: string, options: ApiOptions = {}
     if (fieldErrors.length > 0) {
       throw new ApiError(
         fieldErrors.map((f) => f.message).join('. '),
+        res.status,
         fieldErrors,
       )
     }
 
     throw new ApiError(
       body?.message || `Error ${res.status}`,
+      res.status,
       [],
     )
   }

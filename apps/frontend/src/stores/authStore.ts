@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { AuthResponseDto, RegisterDto } from "@find-matching-jobs/types";
-import { api } from "../lib/api";
+import { api, ApiError } from "../lib/api";
 
 interface AuthState {
   user: AuthResponseDto["user"] | null;
@@ -84,16 +84,17 @@ export const useAuthStore = create<AuthState>()(
 
         set({ isLoading: true });
         try {
-          // Cambiado: Ahora apunta al endpoint real del backend para validar sesión
           const profileData = await api.get<any>("/profiles/me", accessToken);
 
-          // Guardamos la sesión activa.
-          // Nota: Si tu store espera la estructura exacta de 'user', puedes guardar profileData
-          // o extender tu tipado según lo que devuelva este endpoint.
           set({ user: profileData, isAuthenticated: true });
         } catch (e) {
-          // Si el token expiró (Error 401) o es inválido, limpiamos la sesión
-          set({ user: null, accessToken: null, isAuthenticated: false });
+          if (e instanceof ApiError && e.status === 404) {
+            // 404 = perfil no encontrado, el usuario sigue autenticado pero sin perfil
+            set({ user: null, isAuthenticated: true });
+          } else {
+            // 401/otros errores = token inválido o expirado, limpiamos la sesión
+            set({ user: null, accessToken: null, isAuthenticated: false });
+          }
         } finally {
           set({ isLoading: false });
         }
