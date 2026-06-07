@@ -1,6 +1,5 @@
 "use client";
 
-import { Job } from "@/hooks/useDashboard";
 import SkeletonCard from "./SkeletonCard";
 import Link from "next/link";
 
@@ -10,6 +9,14 @@ function timeAgo(date: string) {
   if (days === 0) return "Hoy";
   if (days === 1) return "Ayer";
   return `Hace ${days} días`;
+}
+
+interface Job {
+  id: number;
+  titulo: string;
+  empresa: string;
+  ubicacion: string;
+  fecha_publicacion: string;
 }
 
 export default function JobsCard({

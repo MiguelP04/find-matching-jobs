@@ -20,21 +20,12 @@ export interface StudentSkill {
   nivel: string;
 }
 
-export interface Job {
-  id: number;
-  titulo: string;
-  empresa: string;
-  ubicacion: string;
-  fecha_publicacion: string;
-}
-
 export function useDashboard() {
   const token = useAuthStore((s) => s.accessToken);
   const user = useAuthStore((s) => s.user);
 
   const [profile, setProfile] = useState<Profile | null>(null);
   const [skills, setSkills] = useState<StudentSkill[]>([]);
-  const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -45,10 +36,9 @@ export function useDashboard() {
       setLoading(true);
       setErrors({});
 
-      const [profileRes, skillsRes, jobsRes] = await Promise.allSettled([
+      const [profileRes, skillsRes] = await Promise.allSettled([
         api.get<Profile>("/profiles/me", token),
         api.get<StudentSkill[]>("/student-skills/me", token),
-        api.get<{ jobs: Job[] }>("/jobs?limit=5", token)
       ]);
 
       if (profileRes.status == "fulfilled") setProfile(profileRes.value);
@@ -56,9 +46,6 @@ export function useDashboard() {
 
       if (skillsRes.status == "fulfilled") setSkills(skillsRes.value);
       else setErrors((e) => ({ ...e, skills: "Error al cargar skills" }));
-
-      if (jobsRes.status == "fulfilled") setJobs(jobsRes.value.jobs);
-      else setErrors((e) => ({ ...e, jobs: "Error al cargar jobs" }));
 
       setLoading(false);
     };
@@ -70,7 +57,6 @@ export function useDashboard() {
     user,
     profile,
     skills,
-    jobs,
     loading,
     errors,
   };
