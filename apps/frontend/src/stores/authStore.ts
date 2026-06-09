@@ -90,7 +90,7 @@ export const useAuthStore = create<AuthState>()(
           // Guardamos la sesión activa.
           // Nota: Si tu store espera la estructura exacta de 'user', puedes guardar profileData
           // o extender tu tipado según lo que devuelva este endpoint.
-          set({ user: profileData, isAuthenticated: true });
+          set({ user: profileData.user, isAuthenticated: true });
         } catch (e) {
           // Si el token expiró (Error 401) o es inválido, limpiamos la sesión
           set({ user: null, accessToken: null, isAuthenticated: false });

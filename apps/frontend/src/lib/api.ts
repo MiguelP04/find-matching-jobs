@@ -29,6 +29,7 @@ async function request<T>(method: string, path: string, options: ApiOptions = {}
     method,
     headers,
     body: options.body ? JSON.stringify(options.body) : undefined,
+    cache: "no-store",
   })
   if (!res.ok) {
     const body = await res.json().catch(() => null)
