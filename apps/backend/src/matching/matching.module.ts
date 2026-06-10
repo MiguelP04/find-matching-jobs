@@ -6,11 +6,13 @@ import { Job } from '../jobs/entities/job.entity';
 import { Skill } from '../skills/entities/skill.entity';
 import { StudentSkill } from '../skills/entities/student-skill.entity';
 import { MatchingService } from './matching.service';
+import { MatchingController } from './matching.controller';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([MatchResult, Profile, Job, Skill, StudentSkill]),
   ],
+  controllers: [MatchingController],
   providers: [MatchingService],
   exports: [MatchingService, TypeOrmModule],
 })

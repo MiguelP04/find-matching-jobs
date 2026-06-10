@@ -11,7 +11,10 @@ import { MatchResult } from './entities/match-result.entity';
 import { Profile } from '../profiles/entities/profile.entity';
 import { Job } from '../jobs/entities/job.entity';
 import { Skill } from '../skills/entities/skill.entity';
-import { StudentSkill, NivelSkill } from '../skills/entities/student-skill.entity';
+import {
+  StudentSkill,
+  NivelSkill,
+} from '../skills/entities/student-skill.entity';
 import { Modalidad } from '@find-matching-jobs/types';
 import { MatchingOptions } from './interfaces/matching-options.interface';
 
@@ -55,27 +58,21 @@ export class MatchingService {
   /////////////////////////////////////////////////////////////////////////
 
   /////////////////////////////////////////////////////////////////////////
-  // matchStudentToJob: Matching individual (estudiante vs vacante)
-  // 1. Carga perfil con skills del estudiante + vacante
-  // 2. Extrae skills requeridas desde la descripción de la vacante
-  // 3. Compara skills: genera matchedSkills[] y missingSkills[]
-  // 4. Calcula score numérico (0-100)
-  // 5. Genera justificación (según options.useAI)
-  // 6. Persiste vía UPSERT en match_results
+  // matchStudentToJob: Matching individual (userId vs vacante)
+  // 1. Resuelve userId → profile.id
+  // 2. Carga perfil con skills del estudiante + vacante
+  // 3. Extrae skills requeridas desde la descripción de la vacante
+  // 4. Compara skills: genera matchedSkills[] y missingSkills[]
+  // 5. Calcula score numérico (0-100)
+  // 6. Genera justificación (según options.useAI)
+  // 7. Persiste vía UPSERT en match_results
   /////////////////////////////////////////////////////////////////////////
   async matchStudentToJob(
-    studentId: number,
+    userId: number,
     jobId: number,
     options?: MatchingOptions,
   ): Promise<MatchResult> {
-    const profile = await this.profileRepo.findOne({
-      where: { id: studentId },
-      relations: ['studentSkills', 'studentSkills.skill'],
-    });
-
-    if (!profile) {
-      throw new NotFoundException(`Perfil ${studentId} no encontrado`);
-    }
+    const profile = await this.getProfileByUserId(userId);
 
     const job = await this.jobRepo.findOne({ where: { id: jobId } });
     if (!job) {
@@ -118,29 +115,50 @@ export class MatchingService {
 
     if (useAI) {
       justification = await this.generateJustificationWithAI(
-        score, matchedSkills, missingSkills, requiredSkills, profile, job,
+        score,
+        matchedSkills,
+        missingSkills,
+        requiredSkills,
+        profile,
+        job,
       ).catch(() =>
         this.generateJustificationWithRules(
-          score, matchedSkills, missingSkills, requiredSkills, profile, job,
+          score,
+          matchedSkills,
+          missingSkills,
+          requiredSkills,
+          profile,
+          job,
         ),
       );
     } else {
       justification = this.generateJustificationWithRules(
-        score, matchedSkills, missingSkills, requiredSkills, profile, job,
+        score,
+        matchedSkills,
+        missingSkills,
+        requiredSkills,
+        profile,
+        job,
       );
     }
 
-    return this.upsertMatchResult(studentId, jobId, score, justification, missingSkills);
+    return this.upsertMatchResult(
+      profile.id,
+      jobId,
+      score,
+      justification,
+      missingSkills,
+    );
   }
 
   /////////////////////////////////////////////////////////////////////////
   // matchStudentToAllJobs: Matching de un estudiante vs todas las vacantes activas (< 30 días)
   /////////////////////////////////////////////////////////////////////////
-  async matchStudentToAllJobs(studentId: number): Promise<MatchResult[]> {
-    const profile = await this.profileRepo.findOne({ where: { id: studentId } });
-    if (!profile) {
-      throw new NotFoundException(`Perfil ${studentId} no encontrado`);
-    }
+  async matchStudentToAllJobs(
+    userId: number,
+    options?: MatchingOptions,
+  ): Promise<MatchResult[]> {
+    const profile = await this.getProfileByUserId(userId);
 
     const thirtyDaysAgo = subDays(new Date(), 30);
     const jobs = await this.jobRepo.find({
@@ -150,10 +168,12 @@ export class MatchingService {
     const results: MatchResult[] = [];
     for (const job of jobs) {
       try {
-        const result = await this.matchStudentToJob(studentId, job.id);
+        const result = await this.matchStudentToJob(userId, job.id, options);
         results.push(result);
       } catch (error: any) {
-        this.logger.error(`Error matching student ${studentId} to job ${job.id}: ${error.message}`);
+        this.logger.error(
+          `Error matching student ${profile.id} to job ${job.id}: ${error.message}`,
+        );
       }
     }
     return results;
@@ -162,20 +182,58 @@ export class MatchingService {
   /////////////////////////////////////////////////////////////////////////
   // matchAllStudentsToAllJobs: Matching masivo (todos los estudiantes vs todas las vacantes activas)
   /////////////////////////////////////////////////////////////////////////
-  async matchAllStudentsToAllJobs(): Promise<{ studentId: number; count: number }[]> {
+  async matchAllStudentsToAllJobs(): Promise<
+    { studentId: number; count: number }[]
+  > {
     const profiles = await this.profileRepo.find();
     const results: { studentId: number; count: number }[] = [];
 
     for (const profile of profiles) {
       try {
-        const matches = await this.matchStudentToAllJobs(profile.id);
-        results.push({ studentId: profile.id, count: matches.length });
+        const matches = await this.matchStudentToAllJobs(profile.user_id);
+        results.push({ studentId: profile.user_id, count: matches.length });
       } catch (error: any) {
-        this.logger.error(`Error processing matches for student ${profile.id}: ${error.message}`);
+        this.logger.error(
+          `Error processing matches for student ${profile.id}: ${error.message}`,
+        );
         results.push({ studentId: profile.id, count: 0 });
       }
     }
     return results;
+  }
+
+  /////////////////////////////////////////////////////////////////////////
+  // getMatchesForUser: Retorna los resultados de matching del usuario actual
+  // Resuelve userId → profile, busca match_results con job, ordena por score DESC
+  /////////////////////////////////////////////////////////////////////////
+  async getMatchesForUser(userId: number): Promise<MatchResult[]> {
+    const profile = await this.getProfileByUserId(userId);
+    return this.matchResultRepo.find({
+      where: { student_id: profile.id },
+      relations: ['job'],
+      order: { score: 'DESC' },
+    });
+  }
+
+  /////////////////////////////////////////////////////////////////////////
+  // Métodos privados - Utilidades
+  /////////////////////////////////////////////////////////////////////////
+
+  /////////////////////////////////////////////////////////////////////////
+  // getProfileByUserId: Busca el perfil asociado a un userId
+  // Lanza NotFoundException si no existe
+  /////////////////////////////////////////////////////////////////////////
+  private async getProfileByUserId(userId: number): Promise<Profile> {
+    const profile = await this.profileRepo.findOne({
+      where: { user_id: userId },
+      relations: ['studentSkills', 'studentSkills.skill'],
+    });
+    if (!profile) {
+      throw new NotFoundException(
+        'Perfil del estudiante no encontrado. Crea un perfil primero.',
+      );
+    }
+    return profile;
   }
 
   /////////////////////////////////////////////////////////////////////////
@@ -190,7 +248,9 @@ export class MatchingService {
   private extractSkillsFromText(text: string, allSkills: Skill[]): Skill[] {
     const lowerText = text.toLowerCase();
     return allSkills.filter((skill) => {
-      const escaped = skill.nombre.toLowerCase().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const escaped = skill.nombre
+        .toLowerCase()
+        .replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       const regex = new RegExp(`\\b${escaped}\\b`, 'i');
       return regex.test(lowerText);
     });
@@ -262,8 +322,10 @@ export class MatchingService {
 
     if (pref === jobModality) return 15;
 
-    if (pref === Modalidad.REMOTO && jobModality === Modalidad.HIBRIDO) return 10;
-    if (pref === Modalidad.PRESENCIAL && jobModality === Modalidad.HIBRIDO) return 10;
+    if (pref === Modalidad.REMOTO && jobModality === Modalidad.HIBRIDO)
+      return 10;
+    if (pref === Modalidad.PRESENCIAL && jobModality === Modalidad.HIBRIDO)
+      return 10;
     if (pref === Modalidad.HIBRIDO) return 10;
 
     return 0;
@@ -295,14 +357,14 @@ export class MatchingService {
   // Retorna: REMOTO | HIBRIDO | PRESENCIAL | null (no detectable)
   /////////////////////////////////////////////////////////////////////////
   private inferModality(job: Job): Modalidad | null {
-    const searchText = [
-      job.titulo,
-      job.descripcion,
-      job.ubicacion,
-    ].join(' ').toLowerCase();
+    const searchText = [job.titulo, job.descripcion, job.ubicacion]
+      .join(' ')
+      .toLowerCase();
 
     if (
-      /remoto|remota|work\s*from\s*home|home\s*office|teletrabajo/i.test(searchText) &&
+      /remoto|remota|work\s*from\s*home|home\s*office|teletrabajo/i.test(
+        searchText,
+      ) &&
       !/presencial|on\s*site|onsite/i.test(searchText)
     ) {
       return Modalidad.REMOTO;
@@ -359,7 +421,9 @@ export class MatchingService {
 
     if (missingSkills.length > 0) {
       const verbo = missingSkills.length === 1 ? 'Te falta' : 'Te faltan';
-      parts.push(`${verbo} ${missingSkills.length} skill${missingSkills.length > 1 ? 's' : ''}: ${missingSkills.join(', ')}.`);
+      parts.push(
+        `${verbo} ${missingSkills.length} skill${missingSkills.length > 1 ? 's' : ''}: ${missingSkills.join(', ')}.`,
+      );
     }
 
     if (matchedSkills.length > 0) {
@@ -373,9 +437,13 @@ export class MatchingService {
       if (pref === jobModality) {
         parts.push(`La modalidad ${jobModality} coincide con tu preferencia.`);
       } else if (jobModality === Modalidad.HIBRIDO) {
-        parts.push(`La modalidad ${jobModality} ofrece flexibilidad compatible con tu preferencia (${pref}).`);
+        parts.push(
+          `La modalidad ${jobModality} ofrece flexibilidad compatible con tu preferencia (${pref}).`,
+        );
       } else {
-        parts.push(`La modalidad ${jobModality} es diferente a tu preferencia (${pref}).`);
+        parts.push(
+          `La modalidad ${jobModality} es diferente a tu preferencia (${pref}).`,
+        );
       }
     }
 
@@ -390,7 +458,10 @@ export class MatchingService {
   // describeSkillLevels: Agrupa skills coincidentes por nivel para la justificación
   // Ej: "Nivel avanzado en React, Node.js. Nivel intermedio en TypeScript."
   /////////////////////////////////////////////////////////////////////////
-  private describeSkillLevels(matchedSkills: string[], profile: Profile): string | null {
+  private describeSkillLevels(
+    matchedSkills: string[],
+    profile: Profile,
+  ): string | null {
     const avanzadas: string[] = [];
     const intermedias: string[] = [];
     const basicas: string[] = [];
@@ -412,9 +483,12 @@ export class MatchingService {
     }
 
     const levelParts: string[] = [];
-    if (avanzadas.length > 0) levelParts.push(`Nivel avanzado en ${avanzadas.join(', ')}`);
-    if (intermedias.length > 0) levelParts.push(`Nivel intermedio en ${intermedias.join(', ')}`);
-    if (basicas.length > 0) levelParts.push(`Nivel básico en ${basicas.join(', ')}`);
+    if (avanzadas.length > 0)
+      levelParts.push(`Nivel avanzado en ${avanzadas.join(', ')}`);
+    if (intermedias.length > 0)
+      levelParts.push(`Nivel intermedio en ${intermedias.join(', ')}`);
+    if (basicas.length > 0)
+      levelParts.push(`Nivel básico en ${basicas.join(', ')}`);
 
     return levelParts.length > 0 ? levelParts.join('. ') + '.' : null;
   }
@@ -438,7 +512,12 @@ export class MatchingService {
     const apiKey = this.configService.get<string>('GEMINI_API_KEY');
     if (!apiKey) {
       return this.generateJustificationWithRules(
-        score, matchedSkills, missingSkills, requiredSkills, profile, job,
+        score,
+        matchedSkills,
+        missingSkills,
+        requiredSkills,
+        profile,
+        job,
       );
     }
 
@@ -446,8 +525,8 @@ export class MatchingService {
 
 Datos del match:
 - Score: ${score}/100
-- Skills del estudiante: ${profile.studentSkills.map(ss => `${ss.skill.nombre} (${ss.nivel})`).join(', ')}
-- Skills requeridas por la vacante: ${requiredSkills.map(s => s.nombre).join(', ')}
+- Skills del estudiante: ${profile.studentSkills.map((ss) => `${ss.skill.nombre} (${ss.nivel})`).join(', ')}
+- Skills requeridas por la vacante: ${requiredSkills.map((s) => s.nombre).join(', ')}
 - Skills coincidentes: ${matchedSkills.join(', ') || 'ninguna'}
 - Skills faltantes: ${missingSkills.join(', ') || 'ninguna'}
 - Título de la vacante: ${job.titulo}
@@ -458,29 +537,43 @@ Datos del match:
 Genera un texto de 2-3 oraciones explicando el resultado de forma clara y útil para el estudiante.`;
 
     try {
+      const model =
+        this.configService.get<string>('GEMINI_MODEL') || 'gemini-3.5-flash';
+      const timeout = parseInt(
+        this.configService.get<string>('GEMINI_TIMEOUT') || '30000',
+        10,
+      );
       const response = await axios.post(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${apiKey}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
         {
           contents: [{ parts: [{ text: prompt }] }],
           generationConfig: {
             temperature: 0.7,
-            maxOutputTokens: 300,
+            maxOutputTokens: 2048,
           },
         },
         {
           headers: { 'Content-Type': 'application/json' },
-          timeout: 15000,
+          timeout,
         },
       );
 
-      const text = response.data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+      const text =
+        response.data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
       if (text) return text;
     } catch (error: any) {
-      this.logger.warn(`Gemini API error: ${error.message}, falling back to rules`);
+      this.logger.warn(
+        `Gemini API error: ${error.message}, falling back to rules`,
+      );
     }
 
     return this.generateJustificationWithRules(
-      score, matchedSkills, missingSkills, requiredSkills, profile, job,
+      score,
+      matchedSkills,
+      missingSkills,
+      requiredSkills,
+      profile,
+      job,
     );
   }
 
