@@ -2,15 +2,14 @@ import { Injectable, NotFoundException, ConflictException } from '@nestjs/common
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Profile } from './entities/profile.entity';
-import { CreateProfileDto } from './dto/create-profile.dto';
-import { UpdateProfileDto } from './dto/update-profile.dto';
+import { CreateProfileDto, UpdateProfileDto } from '@find-matching-jobs/types';
 
 @Injectable()
 export class ProfilesService {
   constructor(
     @InjectRepository(Profile)
     private profilesRepository: Repository<Profile>,
-  ) {}
+  ) { }
 
   async create(userId: number, createProfileDto: CreateProfileDto): Promise<Profile> {
     const existing = await this.profilesRepository.findOne({ where: { user_id: userId } });
