@@ -1,0 +1,160 @@
+
+COMBINED SCHEMA - Frontend + Backend + DTOs
+
+---
+
+**FRONTEND (apps/frontend)**
+
+1. Resumen
+- Proyecto: frontend de Find Matching Jobs.
+- Stack: Next.js (App Router, v16), React 19, TypeScript, Tailwind CSS v4.
+- Propósito: UI pública, autenticación y dashboard para estudiantes; componentes y hooks para consumir el backend y mostrar emparejamientos.
+
+2. Estructura de ficheros (alto nivel)
+- package.json
+- src/
+	- app/
+		- layout.tsx                -> Root layout (importa `AuthInitializer` para verificar sesión en montaje)
+		- page.tsx                  -> Página principal (plantilla informativa)
+		- auth/
+			- page.tsx                -> Página de autenticación (login/register UI + Google OAuth redirect)
+			- callback/page.tsx       -> Callback (OAuth) placeholder
+		- dashboard/
+			- page.tsx                -> Dashboard protegido (usa `ProtectedRoute` y `DashboardLayout`)
+			- perfil/page.tsx         -> Perfil del usuario (placeholder/route creada)
+	- components/
+		- ui/ (button, checkbox, input, tabs)
+	- lib/
+		- api.ts                    -> Cliente HTTP centralizado (fetch + `ApiError`). Manejo de respuestas no-JSON, detección de `fieldErrors`, `cache: "no-store"`.
+		- utils.ts
+	- stores/
+		- authStore.ts              -> Zustand persistente para auth (login, register, setAuth, logout, `checkAuth`). `register` usa `RegisterDto`.
+
+3. Rutas relevantes
+- `/`, `/auth`, `/auth/callback`, `/dashboard`, `/dashboard/perfil`
+
+4. Flujo de datos y estado
+- `api.get` / `api.post` usan `NEXT_PUBLIC_API_URL`.
+- `authStore` persiste `user`, `accessToken`, `isAuthenticated` y valida token en `checkAuth()` contra `/profiles/me`.
+
+5. Dependencias y scripts
+- `pnpm dev` -> `next dev -p 3001`
+
+---
+
+**BACKEND (apps/backend)**
+
+1. Resumen
+- Proyecto: backend de Find Matching Jobs.
+- Stack: NestJS (v11), TypeScript, TypeORM, PostgreSQL, Passport (JWT + Google OAuth).
+- Propósito: API REST para gestionar usuarios, perfiles, skills, jobs y la lógica de matching entre estudiantes y vacantes. Integración con JSearch (RapidAPI) y opción de justificaciones IA (Gemini).
+
+2. Estructura de ficheros (alto nivel)
+- package.json
+- src/
+	- auth/ (auth.controller -> register/login/google redirect & callback to FRONTEND_URL)
+	- profiles/ (POST /profiles, GET /profiles/me, PATCH /profiles/me)
+	- skills/ (catalogue + student-skills)
+	- jobs/ (GET /jobs, GET /jobs/search, GET /jobs/:id, POST /jobs/sync (ADMIN))
+	- jsearch/ (integration with RapidAPI JSearch)
+	- matching/ (POST /matching/sync, GET /matching/my-matches, POST /matching/job/:jobId)
+	- config/data-source.ts (TypeORM config)
+	- migrations/
+
+3. Endpoints y contratos
+- Auth: POST `/auth/login`, POST `/auth/register`, GET `/auth/google`, GET `/auth/google/callback` (redirige con token)
+- Profiles: POST `/profiles`, GET `/profiles/me`, PATCH `/profiles/me` (protegidos)
+- Jobs: listado, búsqueda, sync
+- Matching: endpoints para sync, consulta y matching por job (opción `useAI=true`)
+
+4. Integraciones y características clave
+- JSearch (RapidAPI) para traer y sincronizar vacantes
+- Matching service: extracción de skills desde texto, cálculo de score (skills, nivel, modalidad, ubicación), justificación por reglas o Gemini (si `GEMINI_API_KEY` configurado), y persistencia UPSERT en `match_results`.
+
+5. Variables de entorno importantes
+- `DATABASE_URL`, `JWT_SECRET`, `JSEARCH_API_KEY`, `FRONTEND_URL`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_CALLBACK_URL`, `GEMINI_API_KEY`, `GEMINI_MODEL`, `GEMINI_TIMEOUT`.
+
+---
+
+**SHARED DTOs (packages/types/src)**
+
+-- index.ts exports --
+export * from "./base.dto";
+export * from "./auth.dto";
+export * from "./user.dto";
+export * from "./skills.dto";
+export * from "./student-skills.dto";
+export * from "./profile.dto";
+export * from "./search-jobs.dto";
+
+-- auth.dto.ts --
+export enum UserRole {
+	ESTUDIANTE = "estudiante",
+	ADMIN = "admin",
+}
+
+export class RegisterDto {
+	nombre!: string; // @IsNotEmpty, @IsString
+	apellido!: string; // @IsNotEmpty, @IsString
+	email!: string; // @IsEmail
+	password!: string; // @IsNotEmpty, @IsString, @MinLength(6)
+	rol?: UserRole = UserRole.ESTUDIANTE; // @IsOptional, @IsEnum
+}
+
+export class LoginDto {
+	email!: string; // @IsEmail
+	password!: string; // @IsNotEmpty
+}
+
+export class AuthResponseDto {
+	access_token!: string;
+	user!: {
+		id: string;
+		email: string;
+		nombre: string;
+		apellido: string;
+		rol: UserRole;
+	};
+}
+
+-- base.dto.ts --
+export class PaginationDto {
+	page?: number = 1; // @IsOptional, @Type(() => Number), @Min(1)
+	limit?: number = 10; // @IsOptional, @Type(() => Number), @Min(1), @Max(100)
+}
+
+export class ApiResponseDto<T> { success!: boolean; data?: T; message?: string; errors?: string[]; timestamp: string }
+
+export class BaseEntityDto { id!: string; createdAt!: Date; updatedAt!: Date }
+
+-- user.dto.ts (resumen) --
+CreateUserDto: nombre, apellido, email, password, rol
+UpdateUserDto: nombre?, apellido?, email?
+UserResponseDto: id, nombre, apellido, email, rol, createdAt, updatedAt
+
+-- skills.dto.ts --
+CreateSkillDto: name (string, minLen 2)
+UpdateSkillDto: name
+
+-- student-skills.dto.ts --
+export enum NivelSkill { BASICO='Básico', INTERMEDIO='Intermedio', AVANZADO='Avanzado' }
+CreateStudentSkillDto: skill_id (number), nivel (NivelSkill)
+UpdateStudentSkillDto: nivel
+
+-- profile.dto.ts --
+export enum Modalidad { REMOTO='remoto', PRESENCIAL='presencial', HIBRIDO='hibrido' }
+CreateProfileDto / UpdateProfileDto: resumen_profesional?, semestre? (1-14), modalidad_preferida?, github_url?, linkedin_url?
+
+-- search-jobs.dto.ts --
+SearchJobsDto extends PaginationDto: query (string), location? (string)
+
+---
+
+Notas:
+- El frontend y el backend consumen el paquete `@find-matching-jobs/types`, por lo que los DTOs deben mantenerse sincronizados.
+- El backend expone endpoints que el frontend espera (`/auth/login`, `/auth/register`, `/profiles/me`, `/student-skills/me`, `/matching/*`, `/jobs/*`).
+
+---
+
+Archivo generado automáticamente combinando los SCHEMAs y DTOs del workspace. ¿Quieres que lo convierta a `README.md` o que genere una especificación OpenAPI mínima para los endpoints principales?
+
