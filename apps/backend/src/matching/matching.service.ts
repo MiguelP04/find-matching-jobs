@@ -17,6 +17,7 @@ import {
 } from '../skills/entities/student-skill.entity';
 import { Modalidad } from '@find-matching-jobs/types';
 import { MatchingOptions } from './interfaces/matching-options.interface';
+import { MatchesQueryDto } from './dto/matches-query.dto';
 
 /////////////////////////////////////////////////////////////////////////
 // Servicio principal de Matching
@@ -49,7 +50,6 @@ export class MatchingService {
     @InjectRepository(Skill)
     private readonly skillRepo: Repository<Skill>,
     @InjectRepository(StudentSkill)
-    private readonly studentSkillRepo: Repository<StudentSkill>,
     private readonly configService: ConfigService,
   ) {}
 
@@ -205,14 +205,55 @@ export class MatchingService {
   /////////////////////////////////////////////////////////////////////////
   // getMatchesForUser: Retorna los resultados de matching del usuario actual
   // Resuelve userId → profile, busca match_results con job, ordena por score DESC
+  // Soporta paginación (page/limit) y filtro por score mínimo (minScore)
   /////////////////////////////////////////////////////////////////////////
-  async getMatchesForUser(userId: number): Promise<MatchResult[]> {
+  async getMatchesForUser(
+    userId: number,
+    options?: MatchesQueryDto,
+  ): Promise<{
+    data: MatchResult[];
+    total: number;
+    page: number;
+    limit: number;
+  }> {
     const profile = await this.getProfileByUserId(userId);
-    return this.matchResultRepo.find({
-      where: { student_id: profile.id },
+    const page = options?.page ?? 1;
+    const limit = options?.limit ?? 10;
+    const skip = (page - 1) * limit;
+
+    const [data, total] = await this.matchResultRepo.findAndCount({
+      where: {
+        student_id: profile.id,
+        score:
+          options?.minScore !== undefined
+            ? MoreThanOrEqual(options.minScore)
+            : undefined,
+      },
       relations: ['job'],
       order: { score: 'DESC' },
+      skip,
+      take: limit,
     });
+
+    return { data, total, page, limit };
+  }
+
+  /////////////////////////////////////////////////////////////////////////
+  // getMatchById: Retorna un match específico por ID, validando que
+  // pertenezca al usuario autenticado
+  /////////////////////////////////////////////////////////////////////////
+  async getMatchById(matchId: number, userId: number): Promise<MatchResult> {
+    const profile = await this.getProfileByUserId(userId);
+    const match = await this.matchResultRepo.findOne({
+      where: { id: matchId, student_id: profile.id },
+      relations: ['job'],
+    });
+
+    if (!match) {
+      throw new NotFoundException(`Match #${matchId} no encontrado`);
+    }
+
+    return match;
   }
 
   /////////////////////////////////////////////////////////////////////////
@@ -509,7 +550,7 @@ export class MatchingService {
     profile: Profile,
     job: Job,
   ): Promise<string> {
-    const apiKey = this.configService.get<string>('GEMINI_API_KEY');
+    const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
       return this.generateJustificationWithRules(
         score,
@@ -537,12 +578,8 @@ Datos del match:
 Genera un texto de 2-3 oraciones explicando el resultado de forma clara y útil para el estudiante.`;
 
     try {
-      const model =
-        this.configService.get<string>('GEMINI_MODEL') || 'gemini-3.5-flash';
-      const timeout = parseInt(
-        this.configService.get<string>('GEMINI_TIMEOUT') || '30000',
-        10,
-      );
+      const model = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
+      const timeout = parseInt(process.env.GEMINI_TIMEOUT || '30000', 10);
       const response = await axios.post(
         `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
         {
@@ -566,7 +603,6 @@ Genera un texto de 2-3 oraciones explicando el resultado de forma clara y útil 
         `Gemini API error: ${error.message}, falling back to rules`,
       );
     }
-
     return this.generateJustificationWithRules(
       score,
       matchedSkills,
