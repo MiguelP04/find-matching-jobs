@@ -5,17 +5,16 @@ import { Briefcase, GraduationCap, Globe } from "lucide-react";
 import { Input } from "@/components/ui/input";
 
 interface SkillFormValue {
-  id?: number;
+  dbId?: number;
   skillId: number;
   name: string;
-  category: string;
   level: "Básico" | "Intermedio" | "Avanzado";
 }
 
 interface ProfileFormInputs {
   bio: string;
   semestre: string;
-  modalidad: "REMOTO" | "PRESENCIAL" | "HÍBRIDO";
+  modalidad: "" | "REMOTO" | "PRESENCIAL" | "HÍBRIDO";
   githubUrl: string;
   linkedinUrl: string;
   skills: SkillFormValue[];
@@ -111,6 +110,7 @@ export function ProfileBaseForm({ register }: ProfileBaseFormProps) {
               {...register("semestre")}
               className="w-full h-10 rounded-lg border border-gray-300 bg-white pl-9 pr-3 text-sm outline-hidden focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20"
             >
+              <option value="">Selecciona tu semestre</option>
               {[...Array(9)].map((_, i) => (
                 <option
                   key={i + 1}
@@ -131,6 +131,7 @@ export function ProfileBaseForm({ register }: ProfileBaseFormProps) {
               {...register("modalidad")}
               className="w-full h-10 rounded-lg border border-gray-300 bg-white pl-9 pr-3 text-sm outline-hidden focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20"
             >
+              <option value="">Selecciona una modalidad</option>
               <option value="REMOTO">Remoto</option>
               <option value="PRESENCIAL">Presencial</option>
               <option value="HÍBRIDO">Híbrido</option>

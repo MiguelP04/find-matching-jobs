@@ -13,22 +13,20 @@ import { SkillsForm } from "@/components/perfil/SkillsForm";
 // Interfaz para los elementos del catálogo global del backend
 export interface CatalogSkill {
   id: number;
-  name: string;
-  category: string;
+  nombre: string;
 }
 
 export interface SkillFormValue {
-  id?: number;
+  dbId?: number; // ID del registro en la tabla student_skills (undefined si es nueva)
   skillId: number;
   name: string;
-  category: string;
   level: "Básico" | "Intermedio" | "Avanzado";
 }
 
 export interface ProfileFormInputs {
   bio: string;
   semestre: string;
-  modalidad: "REMOTO" | "PRESENCIAL" | "HÍBRIDO";
+  modalidad: "" | "REMOTO" | "PRESENCIAL" | "HÍBRIDO";
   githubUrl: string;
   linkedinUrl: string;
   skills: SkillFormValue[];
@@ -49,8 +47,8 @@ export default function ProfileEditPage() {
     useForm<ProfileFormInputs>({
       defaultValues: {
         bio: "",
-        semestre: "5",
-        modalidad: "REMOTO",
+        semestre: "",
+        modalidad: "",
         githubUrl: "",
         linkedinUrl: "",
         skills: [],
@@ -62,7 +60,7 @@ export default function ProfileEditPage() {
     name: "skills",
   });
 
-  // 1. Carga de datos iniciales híbrida (Perfil Base + Catálogo API + LocalStorage)
+  // 1. Carga de datos iniciales (Perfil Base + Catálogo de Habilidades + Habilidades reales del estudiante)
   useEffect(() => {
     async function loadProfileData() {
       if (!accessToken) return;
@@ -86,41 +84,31 @@ export default function ProfileEditPage() {
         const profileData =
           profileRes?.data !== undefined ? profileRes.data : profileRes;
 
-        // C. Extracción de habilidades mockeadas locales
-        const localMockSkills = localStorage.getItem("mock_student_skills");
-        let mappedSkills: SkillFormValue[] = [];
+        // C. Petición de las habilidades reales del estudiante desde la base de datos
+        const studentSkillsRes = await api
+          .get<any>("/student-skills/me", accessToken)
+          .catch(() => null);
+        const studentSkillsData =
+          studentSkillsRes?.data !== undefined
+            ? studentSkillsRes.data
+            : studentSkillsRes;
 
-        if (localMockSkills) {
-          mappedSkills = JSON.parse(localMockSkills);
-        } else {
-          mappedSkills = [
-            {
-              id: 101,
-              skillId: 1,
-              name: "React.js",
-              category: "Frontend Framework",
-              level: "Intermedio",
-            },
-            {
-              id: 102,
-              skillId: 5,
-              name: "TypeScript",
-              category: "Languages",
-              level: "Básico",
-            },
-          ];
-          localStorage.setItem(
-            "mock_student_skills",
-            JSON.stringify(mappedSkills),
-          );
-        }
+        const mappedSkills: SkillFormValue[] = Array.isArray(studentSkillsData)
+          ? studentSkillsData.map((ss: any) => ({
+              dbId: ss.id,
+              skillId: ss.skill_id,
+              name: ss.skill?.nombre ?? "",
+              level: ss.nivel as "Básico" | "Intermedio" | "Avanzado",
+            }))
+          : [];
 
         setInitialSkills(mappedSkills);
 
         if (profileData) {
-          let frontendModalidad: "REMOTO" | "PRESENCIAL" | "HÍBRIDO" = "REMOTO";
+          let frontendModalidad: "" | "REMOTO" | "PRESENCIAL" | "HÍBRIDO" = "";
           if (profileData?.modalidad_preferida) {
             const rawMod = profileData.modalidad_preferida.toLowerCase();
+            if (rawMod === "remoto") frontendModalidad = "REMOTO";
             if (rawMod === "presencial") frontendModalidad = "PRESENCIAL";
             if (rawMod === "hibrido" || rawMod === "híbrido")
               frontendModalidad = "HÍBRIDO";
@@ -128,9 +116,7 @@ export default function ProfileEditPage() {
 
           reset({
             bio: profileData?.resumen_profesional || "",
-            semestre: profileData?.semestre
-              ? String(profileData.semestre)
-              : "5",
+            semestre: profileData?.semestre ? String(profileData.semestre) : "",
             modalidad: frontendModalidad,
             githubUrl: profileData?.github_url || "",
             linkedinUrl: profileData?.linkedin_url || "",
@@ -166,15 +152,14 @@ export default function ProfileEditPage() {
     if (catalogSkill) {
       append({
         skillId: catalogSkill.id,
-        name: catalogSkill.name,
-        category: catalogSkill.category,
+        name: catalogSkill.nombre,
         level: "Básico",
       });
       setSelectedCatalogSkillId("");
     }
   };
 
-  // 3. Envío Híbrido (API + LocalStorage)
+  // 3. Guardado: sincronización real con la base de datos
   const onSubmit = async (data: ProfileFormInputs) => {
     if (!accessToken) return;
     setIsSubmitting(true);
@@ -182,36 +167,79 @@ export default function ProfileEditPage() {
     setSuccessMessage(null);
 
     try {
-      let backendModalidad = data.modalidad.toLowerCase();
-      if (backendModalidad === "híbrido") backendModalidad = "hibrido";
+      // 3a. Guardar cambios del perfil base (solo campos con valor real)
+      let backendModalidad: string | undefined;
+      if (data.modalidad) {
+        backendModalidad = data.modalidad.toLowerCase();
+        if (backendModalidad === "híbrido") backendModalidad = "hibrido";
+      }
 
-      const backendProfilePayload = {
+      const backendProfilePayload: Record<string, unknown> = {
         resumen_profesional: data.bio || null,
-        semestre: Number(data.semestre),
-        modalidad_preferida: backendModalidad,
         github_url: data.githubUrl || null,
         linkedin_url: data.linkedinUrl || null,
       };
+      // Solo enviar semestre si el usuario seleccionó uno
+      if (data.semestre) {
+        backendProfilePayload.semestre = Number(data.semestre);
+      }
+      // Solo enviar modalidad si el usuario seleccionó una
+      if (backendModalidad) {
+        backendProfilePayload.modalidad_preferida = backendModalidad;
+      }
 
       await api.patch("/profiles/me", backendProfilePayload, accessToken);
 
-      const processedSkills = data.skills.map((skill) => {
-        if (!skill.id) {
-          return {
-            ...skill,
-            id: Math.floor(Math.random() * 90000) + 10000,
-          };
-        }
-        return skill;
-      });
+      // 3b. Calcular diferencias entre habilidades iniciales y actuales
+      const currentSkills = data.skills;
+      const currentDbIds = new Set(currentSkills.map((s) => s.dbId).filter(Boolean));
 
-      localStorage.setItem(
-        "mock_student_skills",
-        JSON.stringify(processedSkills),
+      // Habilidades eliminadas: estaban en initialSkills pero ya no están en el formulario
+      const toDelete = initialSkills.filter(
+        (s) => s.dbId && !currentDbIds.has(s.dbId)
       );
 
-      setInitialSkills(processedSkills);
-      setValue("skills", processedSkills);
+      // Habilidades nuevas: no tienen dbId (nunca fueron guardadas en BD)
+      const toAdd = currentSkills.filter((s) => !s.dbId);
+
+      // Habilidades con nivel modificado: tienen dbId pero el nivel cambió
+      const toUpdate = currentSkills.filter((s) => {
+        if (!s.dbId) return false;
+        const original = initialSkills.find((i) => i.dbId === s.dbId);
+        return original && original.level !== s.level;
+      });
+
+      // 3c. Ejecutar todas las peticiones en paralelo
+      await Promise.all([
+        ...toDelete.map((s) =>
+          api.delete(`/student-skills/${s.dbId}`, accessToken)
+        ),
+        ...toAdd.map((s) =>
+          api.post("/student-skills", { skill_id: s.skillId, nivel: s.level }, accessToken)
+        ),
+        ...toUpdate.map((s) =>
+          api.patch(`/student-skills/${s.dbId}`, { nivel: s.level }, accessToken)
+        ),
+      ]);
+
+      // 3d. Recargar las habilidades desde la BD para actualizar los dbId asignados
+      const refreshRes = await api
+        .get<any>("/student-skills/me", accessToken)
+        .catch(() => null);
+      const refreshData =
+        refreshRes?.data !== undefined ? refreshRes.data : refreshRes;
+
+      const refreshedSkills: SkillFormValue[] = Array.isArray(refreshData)
+        ? refreshData.map((ss: any) => ({
+            dbId: ss.id,
+            skillId: ss.skill_id,
+            name: ss.skill?.nombre ?? "",
+            level: ss.nivel as "Básico" | "Intermedio" | "Avanzado",
+          }))
+        : [];
+
+      setInitialSkills(refreshedSkills);
+      setValue("skills", refreshedSkills);
 
       setSuccessMessage("¡Perfil guardado y habilidades actualizadas!");
       setTimeout(() => setSuccessMessage(null), 4000);

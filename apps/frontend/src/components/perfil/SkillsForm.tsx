@@ -1,7 +1,7 @@
 "use client";
 
 import { Plus, Search, SlidersHorizontal, Trash2 } from "lucide-react";
-import { UseFormSetValue } from "react-hook-form";
+import { UseFormSetValue, FieldArrayWithId } from "react-hook-form";
 import {
   SkillFormValue,
   ProfileFormInputs,
@@ -9,7 +9,7 @@ import {
 } from "@/app/dashboard/perfil/page";
 
 interface SkillsFormProps {
-  fields: SkillFormValue[];
+  fields: FieldArrayWithId<ProfileFormInputs, "skills">[];
   remove: (index: number) => void;
   setValue: UseFormSetValue<ProfileFormInputs>;
   catalogSkills: CatalogSkill[]; // Catálogo inyectado remotamente
@@ -51,7 +51,7 @@ export function SkillsForm({
           >
             {catalogSkills.length === 0 ? (
               <option value="">
-                No hay habilidades cargadas en el sistema (Esperando Seeder)...
+                No hay habilidades cargadas en el sistema
               </option>
             ) : (
               <option value="">
@@ -61,7 +61,7 @@ export function SkillsForm({
 
             {catalogSkills.map((skill) => (
               <option key={skill.id} value={skill.id}>
-                {skill.name} — ({skill.category})
+                {skill.nombre}
               </option>
             ))}
           </select>
@@ -100,7 +100,6 @@ export function SkillsForm({
                 <h4 className="font-semibold text-gray-900 pr-6">
                   {field.name}
                 </h4>
-                <p className="text-xs text-gray-500 mt-0.5">{field.category}</p>
               </div>
 
               <div className="grid grid-cols-3 gap-2 bg-gray-50 p-1.5 rounded-lg border border-gray-100">
