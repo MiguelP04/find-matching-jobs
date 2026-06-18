@@ -158,7 +158,7 @@ export default function ProfileEditPage() {
     setSuccessMessage(null);
 
     try {
-      let backendModalidad: string | undefined;
+      let backendModalidad: string | null = null;
       if (data.modalidad) {
         backendModalidad = data.modalidad.toLowerCase();
         if (backendModalidad === "híbrido") backendModalidad = "hibrido";
@@ -168,13 +168,9 @@ export default function ProfileEditPage() {
         resumen_profesional: data.bio || null,
         github_url: data.githubUrl || null,
         linkedin_url: data.linkedinUrl || null,
+        semestre: data.semestre ? Number(data.semestre) : null,
+        modalidad_preferida: backendModalidad,
       };
-      if (data.semestre) {
-        backendProfilePayload.semestre = Number(data.semestre);
-      }
-      if (backendModalidad) {
-        backendProfilePayload.modalidad_preferida = backendModalidad;
-      }
 
       await api.patch("/profiles/me", backendProfilePayload, accessToken);
 

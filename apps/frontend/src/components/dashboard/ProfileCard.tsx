@@ -10,7 +10,7 @@ const fields: { key: keyof Profile; label: string }[] = [
   { key: "semestre", label: "Semestre" },
   { key: "modalidad_preferida", label: "Modalidad preferida" },
   { key: "github_url", label: "GitHub" },
-  { key: "linkendin_url", label: "LinkedIn" },
+  { key: "linkedin_url", label: "LinkedIn" },
 ];
 
 export default function ProfileCard({

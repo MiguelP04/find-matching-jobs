@@ -10,7 +10,7 @@ export interface Profile {
   semestre?: number;
   modalidad_preferida?: string;
   github_url?: string;
-  linkendin_url?: string;
+  linkedin_url?: string;
   user: { nombre: string; apellido: string; email: string; rol: string; avatar?: string; }
 }
 
