@@ -57,7 +57,7 @@ export default function ProfileCard({
 
       {filled < total && (
         <Link
-          href="/dashboard/perfil"
+          href="/perfil"
           className="inline-block rounded-lg bg-primary px-4 py-4 text-sm font-semibold text-secondary text-center block w-full transition-colors hover:bg-primary/80"
         >
           Completar perfil

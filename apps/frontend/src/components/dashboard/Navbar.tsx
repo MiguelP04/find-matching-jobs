@@ -43,7 +43,7 @@ export default function Navbar({ onMenuClick, sidebarOpen }: { onMenuClick: () =
               <p className="text-xs text-gray-500">{user?.email}</p>
             </div>
             <button
-              onClick={() => { router.push("/dashboard/perfil"); setDropdownOpen(false); }}
+              onClick={() => { router.push("/perfil"); setDropdownOpen(false); }}
               className="flex w-full items-center gap-2 px-4 py-2 text-sm hover:bg-gray-50"
             >
               <Settings className="size-4" /> Mi Perfil

@@ -6,7 +6,7 @@ import {
   SkillFormValue,
   ProfileFormInputs,
   CatalogSkill,
-} from "@/app/dashboard/perfil/page";
+} from "@/app/perfil/page";
 
 interface SkillsFormProps {
   fields: FieldArrayWithId<ProfileFormInputs, "skills">[];

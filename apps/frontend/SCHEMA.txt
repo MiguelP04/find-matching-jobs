@@ -35,7 +35,7 @@ SCHEMA - Frontend (apps/frontend)
 - `/auth` - `src/app/auth/page.tsx` (login/register UI; usa `react-hook-form` y `class-validator` resolver; botón que redirige a `${NEXT_PUBLIC_API_URL}/auth/google`).
 - `/auth/callback` - OAuth callback (archivo presente).
 - `/dashboard` - `src/app/dashboard/page.tsx` (protegido; muestra `ProfileCard`, `SkillsCard`, `MatchesCard`).
-- `/dashboard/perfil` - `src/app/dashboard/perfil/page.tsx` (ruta creada, actualmente placeholder).
+- `/perfil` - `src/app/perfil/page.tsx` (edición de perfil profesional y habilidades).
 
 4. Flujo de datos y estado
 - `src/lib/api.ts` define `api.get` y `api.post` con manejo de errores:
@@ -81,7 +81,7 @@ SCHEMA - Frontend (apps/frontend)
 - Auth UI implementada en `/auth` y conectada al `useAuthStore`.
 - Protected routing implementado: `AuthInitializer` en `RootLayout` y `ProtectedRoute` para páginas privadas.
 - Dashboard básico implementado: `src/app/dashboard/page.tsx` que compone `DashboardLayout`, `ProfileCard`, `SkillsCard`, `MatchesCard` y otros componentes en `src/components/dashboard/`.
-- `src/app/dashboard/perfil/page.tsx` existe como route (archivo presente, actualmente vacío/placeholder).
+- `src/app/perfil/page.tsx` existe como route (edición de perfil profesional y habilidades).
 
 11. Riesgos y recomendaciones rápidas
 - Configurar `NEXT_PUBLIC_API_URL` en `.env.local` antes de pruebas de integración.
@@ -91,7 +91,7 @@ SCHEMA - Frontend (apps/frontend)
 
 12. Próximos pasos sugeridos
 1) Añadir `.env.local.example` con `NEXT_PUBLIC_API_URL`.
-2) Completar `src/app/dashboard/perfil/page.tsx` y páginas para `matching` y `jobs` que consuman el backend.
+2) Completar `src/app/perfil/page.tsx` y páginas para `matching` y `jobs` que consuman el backend.
 3) Asegurar que `/profiles/me` y `/student-skills/me` devuelven las estructuras esperadas por `useDashboard` y `authStore.checkAuth()`.
 4) Mostrar `fieldErrors` en formularios (ya hay `ApiError` con `fieldErrors`, integrar en UI para feedback por campo).
 5) Revisar expiración/refresh de tokens si se requiere sesión prolongada (actualmente solo `checkAuth` valida una vez al cargar).
