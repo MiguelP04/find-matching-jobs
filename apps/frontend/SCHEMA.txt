@@ -3,17 +3,20 @@ SCHEMA - Frontend (apps/frontend)
 1. Resumen
 - Proyecto: frontend de Find Matching Jobs.
 - Stack: Next.js (App Router, v16), React 19, TypeScript, Tailwind CSS v4.
-- Propósito: UI pública y autenticación para conectar estudiantes con empresas y mostrar emparejamientos.
+- Propósito: UI pública, autenticación y dashboard para estudiantes; componentes y hooks para consumir el backend y mostrar emparejamientos.
 
 2. Estructura de ficheros (alto nivel)
 - package.json
 - src/
   - app/
-    - layout.tsx                -> Root layout (fonts, body wrapper)
-    - page.tsx                  -> Página principal (plantilla por defecto)
+    - layout.tsx                -> Root layout (importa `AuthInitializer` para verificar sesión en montaje)
+    - page.tsx                  -> Página principal (plantilla informativa)
     - auth/
-      - page.tsx                -> Página de autenticación (login/register + Google OAuth)
+      - page.tsx                -> Página de autenticación (login/register UI + Google OAuth redirect)
       - callback/page.tsx       -> Callback (OAuth) placeholder
+    - dashboard/
+      - page.tsx                -> Dashboard protegido (usa `ProtectedRoute` y `DashboardLayout`)
+      - perfil/page.tsx         -> Perfil del usuario (placeholder/route creada)
   - components/
     - ui/
       - button.tsx              -> Botón reutilizable (usa @base-ui/react y cva)
@@ -21,36 +24,42 @@ SCHEMA - Frontend (apps/frontend)
       - input.tsx
       - tabs.tsx
   - lib/
-    - api.ts                    -> Cliente HTTP centralizado (fetch + ApiError)
+    - api.ts                    -> Cliente HTTP centralizado (fetch + `ApiError`). Añadidos: manejo de respuesta no-JSON, detección de `fieldErrors`, `cache: "no-store"`.
     - utils.ts                  -> Utilidades varias (cn, clases...)
   - stores/
-    - authStore.ts              -> Zustand persistente para auth (login, register, setAuth, logout)
+    - authStore.ts              -> Zustand persistente para auth (login, register, setAuth, logout, `checkAuth`). Ahora `register` usa `RegisterDto` y `checkAuth` valida token contra `/profiles/me`.
     - index.ts
 
 3. Rutas / Pages relevantes
-- `/` (index) - `src/app/page.tsx` (plantilla, por ahora informativa).
-- `/auth` - `src/app/auth/page.tsx` (login/register UI; usa `react-hook-form` y `class-validator` resolver).
+- `/` (index) - `src/app/page.tsx` (plantilla informativa).
+- `/auth` - `src/app/auth/page.tsx` (login/register UI; usa `react-hook-form` y `class-validator` resolver; botón que redirige a `${NEXT_PUBLIC_API_URL}/auth/google`).
 - `/auth/callback` - OAuth callback (archivo presente).
+- `/dashboard` - `src/app/dashboard/page.tsx` (protegido; muestra `ProfileCard`, `SkillsCard`, `MatchesCard`).
+- `/perfil` - `src/app/perfil/page.tsx` (edición de perfil profesional y habilidades).
 
 4. Flujo de datos y estado
 - `src/lib/api.ts` define `api.get` y `api.post` con manejo de errores:
   - Usa `NEXT_PUBLIC_API_URL` o `http://localhost:3000` por defecto.
-  - Lanza `ApiError` con `FieldError[]` cuando el backend devuelve errors estructurados.
+  - Intenta parsear JSON y tolera respuestas no-JSON (`.catch(() => null)`). Detecta `fieldErrors` en `body` o en `body.message` y lanza `ApiError` con `fieldErrors`.
+  - Usa `cache: "no-store"` para evitar caches en fetch.
 - `src/stores/authStore.ts`:
-  - Persistencia en `localStorage` (middleware `persist` de zustand).
-  - Guarda `user`, `accessToken`, `isAuthenticated`.
-  - Métodos: `login(email,password)` -> POST `/auth/login` ; `register(...)` -> POST `/auth/register`.
-  - `setAuth(auth)`, `logout()` y `clearError()`.
+  - Persistencia en `localStorage` (middleware `persist` de zustand), key `auth-storage`, y `partialize` para guardar sólo lo necesario.
+  - Estado: `user`, `accessToken`, `isAuthenticated`, `isLoading`, `error`.
+  - Métodos: `login(email,password)` -> POST `/auth/login` ; `register(userData: RegisterDto)` -> POST `/auth/register`.
+  - `setAuth(auth)`, `logout()`, `clearError()` y `checkAuth()` que valida token contra `/profiles/me` y actualiza estado.
 
 5. DTOs y tipado
 - El frontend consume tipos desde el paquete compartido `@find-matching-jobs/types` (p. ej. `LoginDto`, `RegisterDto`, `AuthResponseDto`).
-- Importante: el backend debe respetar exactamente esas formas para interoperabilidad.
+- `authStore` y formularios utilizan esos DTOs: `RegisterDto` en `register`, `LoginDto` en el formulario de login.
+- `useDashboard` define tipos locales `Profile` y `StudentSkill` para consumir `/profiles/me` y `/student-skills/me`.
 
 6. Endpoints usados/esperados (backend)
 - POST `/auth/login` -> responde `AuthResponseDto` con `access_token` y `user`.
-- POST `/auth/register` -> crea usuario (respuesta simple o success).
-- GET/redirect `/auth/google` -> inicia OAuth con Google.
-- Otros endpoints pendientes: matching, jobs, profiles (no implementados en frontend aún).
+- POST `/auth/register` -> crea usuario (acepta `RegisterDto`).
+- GET/redirect `/auth/google` -> inicia OAuth con Google (frontend redirige al backend).
+- GET `/profiles/me` -> usado por `authStore.checkAuth()` y `useDashboard` (debe devolver la estructura esperada: `{ user: {...}, ... }` o similar).
+- GET `/student-skills/me` -> usado por `useDashboard` para cargar skills del usuario.
+- Otros endpoints esperados: `/matching`, `/jobs` (frontend aún pendiente de consumirlos).
 
 7. Variables de entorno
 - `NEXT_PUBLIC_API_URL` : URL base del backend (ej. `http://localhost:3000`).
@@ -70,7 +79,9 @@ SCHEMA - Frontend (apps/frontend)
 10. Estado de implementación
 - Scaffolding y utilidades listas (API client, auth store, componentes base).
 - Auth UI implementada en `/auth` y conectada al `useAuthStore`.
-- Páginas de negocio (matching, listados, dashboard, perfiles) aún por crear.
+- Protected routing implementado: `AuthInitializer` en `RootLayout` y `ProtectedRoute` para páginas privadas.
+- Dashboard básico implementado: `src/app/dashboard/page.tsx` que compone `DashboardLayout`, `ProfileCard`, `SkillsCard`, `MatchesCard` y otros componentes en `src/components/dashboard/`.
+- `src/app/perfil/page.tsx` existe como route (edición de perfil profesional y habilidades).
 
 11. Riesgos y recomendaciones rápidas
 - Configurar `NEXT_PUBLIC_API_URL` en `.env.local` antes de pruebas de integración.
@@ -80,9 +91,10 @@ SCHEMA - Frontend (apps/frontend)
 
 12. Próximos pasos sugeridos
 1) Añadir `.env.local.example` con `NEXT_PUBLIC_API_URL`.
-2) Crear componentes/páginas para `matching` y `jobs` que consuman el backend.
-3) Añadir guardias/redirecciones según `useAuthStore.isAuthenticated`.
-4) Mejorar el manejo de errores de `src/lib/api.ts` y mostrar `fieldErrors` en formularios.
+2) Completar `src/app/perfil/page.tsx` y páginas para `matching` y `jobs` que consuman el backend.
+3) Asegurar que `/profiles/me` y `/student-skills/me` devuelven las estructuras esperadas por `useDashboard` y `authStore.checkAuth()`.
+4) Mostrar `fieldErrors` en formularios (ya hay `ApiError` con `fieldErrors`, integrar en UI para feedback por campo).
+5) Revisar expiración/refresh de tokens si se requiere sesión prolongada (actualmente solo `checkAuth` valida una vez al cargar).
 
 ---
 Archivo generado automáticamente por revisión; si quieres lo adapto a un formato más técnico (diagramas, endpoints OpenAPI, o un README detallado por secciones).

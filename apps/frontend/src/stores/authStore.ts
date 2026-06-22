@@ -86,7 +86,10 @@ export const useAuthStore = create<AuthState>()(
         try {
           const profileData = await api.get<any>("/profiles/me", accessToken);
 
-          set({ user: profileData, isAuthenticated: true });
+          // Guardamos la sesión activa.
+          // Nota: Si tu store espera la estructura exacta de 'user', puedes guardar profileData
+          // o extender tu tipado según lo que devuelva este endpoint.
+          set({ user: profileData.user, isAuthenticated: true });
         } catch (e) {
           if (e instanceof ApiError && e.status === 404) {
             // 404 = perfil no encontrado, el usuario sigue autenticado pero sin perfil

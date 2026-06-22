@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, Index } from 'typeorm'
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, Index, JoinColumn } from 'typeorm'
 import { Profile } from '../../profiles/entities/profile.entity'
 import { Job } from '../../jobs/entities/job.entity'
 
@@ -6,14 +6,6 @@ import { Job } from '../../jobs/entities/job.entity'
 export class MatchResult {
   @PrimaryGeneratedColumn()
   id: number
-
-  @Index()
-  @Column()
-  student_id: number
-
-  @Index()
-  @Column()
-  job_id: number
 
   @Column()
   score: number
@@ -27,9 +19,19 @@ export class MatchResult {
   @Column()
   fecha_analisis: Date
 
+  @Index()
+  @Column()
+  student_id: number
+
+  @Index()
+  @Column()
+  job_id: number
+
   @ManyToOne(() => Profile)
+  @JoinColumn({ name: 'student_id' })
   student: Profile
 
   @ManyToOne(() => Job, (job) => job.matchResults)
+  @JoinColumn({ name: 'job_id' })
   job: Job
 }
