@@ -6,7 +6,7 @@ import { LayoutDashboard, Briefcase, Target, GraduationCap } from "lucide-react"
 
 const items = [
   { href: "/dashboard", label: "Inicio", icon: LayoutDashboard },
-  { href: "/dashboard/vacantes", label: "Vacantes", icon: Briefcase },
+  { href: "/jobs", label: "Vacantes", icon: Briefcase },
   { href: "/dashboard/matches", label: "Mis Matches", icon: Target },
 ];
 

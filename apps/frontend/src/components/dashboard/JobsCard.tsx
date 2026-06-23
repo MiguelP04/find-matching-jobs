@@ -65,7 +65,7 @@ export default function JobsCard({
       )}
 
       <Link
-        href="/dashboard/vacantes"
+        href="/jobs"
         className="text-xs font-medium text-primary hover:underline"
       >
         Ver todas las vacantes →

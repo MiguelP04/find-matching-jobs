@@ -1,40 +1,29 @@
-import { mockJobs } from '../lib/mockJobs';
-import { Job } from '../types/job';
+import { api } from '../lib/api';
+import { MatchResult, MatchesResponse } from '../types/job';
+import { useAuthStore } from '../stores/authStore';
 
-export interface GetJobsParams {
-  location?: string;
-  modality?: string;
-  company?: string;
+export interface GetMatchesParams {
   minScore?: number;
   page?: number;
+  limit?: number;
 }
 
-export const getJobs = async (params: GetJobsParams): Promise<{ data: Job[], total: number }> => {
-  // Simulate API delay
-  await new Promise(resolve => setTimeout(resolve, 500));
+export const getMatches = async (params: GetMatchesParams): Promise<{ data: MatchResult[]; total: number }> => {
+  const token = useAuthStore.getState().accessToken;
+  const queryParams = new URLSearchParams();
 
-  let filteredJobs = [...mockJobs];
+  if (params.minScore !== undefined) queryParams.set('min_score', params.minScore.toString());
+  if (params.page) queryParams.set('page', params.page.toString());
+  if (params.limit) queryParams.set('limit', params.limit.toString());
 
-  if (params.location) {
-    filteredJobs = filteredJobs.filter(job => job.location.toLowerCase().includes(params.location!.toLowerCase()));
-  }
-  if (params.modality) {
-    filteredJobs = filteredJobs.filter(job => job.modality === params.modality);
-  }
-  if (params.company) {
-    filteredJobs = filteredJobs.filter(job => job.company.toLowerCase().includes(params.company!.toLowerCase()));
-  }
-  if (params.minScore) {
-    filteredJobs = filteredJobs.filter(job => job.score >= params.minScore!);
-  }
+  const qs = queryParams.toString();
+  const res = await api.get<MatchesResponse>(`/matches/me${qs ? `?${qs}` : ''}`, token ?? undefined);
 
-  const page = params.page || 1;
-  const pageSize = 2;
-  const start = (page - 1) * pageSize;
-  const paginatedJobs = filteredJobs.slice(start, start + pageSize);
+  return { data: res.data, total: res.total };
+};
 
-  return {
-    data: paginatedJobs,
-    total: filteredJobs.length
-  };
+export const refreshMatches = async (useAI = false): Promise<void> => {
+  const token = useAuthStore.getState().accessToken;
+  const qs = useAI ? '?useAI=true' : '';
+  await api.post(`/matches/refresh${qs}`, undefined, token ?? undefined);
 };

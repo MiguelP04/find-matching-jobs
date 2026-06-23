@@ -2,10 +2,17 @@
 
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '../ui/button';
-import { mockJobs } from '../../lib/mockJobs';
 
-const locations = [...new Set(mockJobs.map(j => j.location))];
-const companies = [...new Set(mockJobs.map(j => j.company))];
+const SCORE_OPTIONS = [
+  { value: '', label: 'Cualquier score' },
+  { value: '0', label: '0+ (Todos)' },
+  { value: '30', label: '30+' },
+  { value: '50', label: '50+' },
+  { value: '60', label: '60+' },
+  { value: '70', label: '70+' },
+  { value: '80', label: '80+ (Alto)' },
+  { value: '90', label: '90+ (Excelente)' },
+];
 
 export const JobFilterBar = () => {
   const router = useRouter();
@@ -24,43 +31,28 @@ export const JobFilterBar = () => {
 
   return (
     <div className="flex flex-col gap-4 p-4 border rounded-lg bg-gray-50">
+      <h3 className="font-semibold text-sm text-gray-700">Filtros</h3>
+
+      <label className="text-xs text-gray-500">Score mínimo</label>
       <select
-        key={`location-${searchParams.get('location') || ''}`}
-        className="h-8 rounded-lg border border-input bg-transparent px-2.5 py-1"
-        defaultValue={searchParams.get('location') || ''}
-        onChange={(e) => handleFilterChange('location', e.target.value)}
+        key={`minScore-${searchParams.get('minScore') || ''}`}
+        className="h-8 rounded-lg border border-input bg-transparent px-2.5 py-1 text-sm"
+        defaultValue={searchParams.get('minScore') || ''}
+        onChange={(e) => handleFilterChange('minScore', e.target.value)}
       >
-        <option value="">Cualquier ubicación</option>
-        {locations.map(loc => (
-          <option key={loc} value={loc}>{loc}</option>
+        {SCORE_OPTIONS.map((opt) => (
+          <option key={opt.value} value={opt.value}>
+            {opt.label}
+          </option>
         ))}
       </select>
 
-      <select
-        key={`company-${searchParams.get('company') || ''}`}
-        className="h-8 rounded-lg border border-input bg-transparent px-2.5 py-1"
-        defaultValue={searchParams.get('company') || ''}
-        onChange={(e) => handleFilterChange('company', e.target.value)}
+      <Button
+        variant="outline"
+        onClick={() => router.push('/jobs')}
       >
-        <option value="">Cualquier empresa</option>
-        {companies.map(c => (
-          <option key={c} value={c}>{c}</option>
-        ))}
-      </select>
-
-      <select
-        key={`modality-${searchParams.get('modality') || ''}`}
-        className="h-8 rounded-lg border border-input bg-transparent px-2.5 py-1"
-        defaultValue={searchParams.get('modality') || ''}
-        onChange={(e) => handleFilterChange('modality', e.target.value)}
-      >
-        <option value="">Cualquier modalidad</option>
-        <option value="Remoto">Remoto</option>
-        <option value="Presencial">Presencial</option>
-        <option value="Híbrido">Híbrido</option>
-      </select>
-
-      <Button onClick={() => router.push('/jobs')}>Limpiar filtros</Button>
+        Limpiar filtros
+      </Button>
     </div>
   );
 };
