@@ -1,23 +1,15 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useAuthStore } from "../stores/authStore";
 import { api } from "../lib/api";
 import { getSessionCookie } from "../lib/cookies";
 
-interface AuthContextValue {
-  isReady: boolean;
-}
-
-const AuthContext = createContext<AuthContextValue>({ isReady: false });
-
-export function useAuthContext() {
-  return useContext(AuthContext);
-}
-
 export function AuthInitializer({ children }: { children: React.ReactNode }) {
   const [isReady, setIsReady] = useState(false);
   const logout = useAuthStore((s) => s.logout);
+  const router = useRouter();
 
   useEffect(() => {
     let cancelled = false;
@@ -40,7 +32,10 @@ export function AuthInitializer({ children }: { children: React.ReactNode }) {
           isAuthenticated: true,
         });
       } catch {
-        if (!cancelled) logout();
+        if (!cancelled) {
+          logout();
+          router.replace("/auth");
+        }
       } finally {
         if (!cancelled) setIsReady(true);
       }
@@ -53,7 +48,18 @@ export function AuthInitializer({ children }: { children: React.ReactNode }) {
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  return (
-    <AuthContext.Provider value={{ isReady }}>{children}</AuthContext.Provider>
-  );
+  if (!isReady) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-slate-50">
+        <div className="flex flex-col items-center gap-2">
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-300 border-t-blue-600" />
+          <p className="text-sm text-gray-500 font-medium">
+            Verificando credenciales...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  return <>{children}</>;
 }

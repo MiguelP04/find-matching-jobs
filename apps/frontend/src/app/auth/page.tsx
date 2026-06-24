@@ -7,7 +7,6 @@ import { classValidatorResolver } from "@hookform/resolvers/class-validator";
 import { RegisterDto, LoginDto } from "@find-matching-jobs/types";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
-import { useAuthContext } from "@/components/AuthInitializer";
 import { Mail, Lock, LogIn, Eye, EyeOff, GraduationCap } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -18,7 +17,6 @@ import Image from "next/image";
 export default function AuthPage() {
   const router = useRouter();
   const { login, register: registerUser, error, clearError, isAuthenticated } = useAuth();
-  const { isReady } = useAuthContext();
   const [isRegister, setIsRegister] = useState(false);
   const [remember, setRemember] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -58,8 +56,6 @@ export default function AuthPage() {
       setSubmitting(false);
     }
   };
-
-  if (!isReady) return null;
 
   return (
     <main className="flex min-h-screen">

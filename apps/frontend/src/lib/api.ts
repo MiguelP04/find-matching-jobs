@@ -1,3 +1,6 @@
+import { clearSessionCookie } from "./cookies";
+import { useAuthStore } from "../stores/authStore";
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
 
 interface ApiOptions {
@@ -35,6 +38,12 @@ async function request<T>(
     body: options.body ? JSON.stringify(options.body) : undefined,
     cache: "no-store",
   });
+  if (res.status === 401) {
+    clearSessionCookie();
+    useAuthStore.getState().logout();
+    window.location.href = "/auth";
+    throw new ApiError("Sesión expirada. Redirigiendo al login...", []);
+  }
   if (!res.ok) {
     const body = await res.json().catch(() => null);
     let fieldErrors: FieldError[] = [];
