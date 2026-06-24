@@ -1,30 +1,36 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useAuth } from "../hooks/useAuth";
+import { useAuthContext } from "./AuthInitializer";
 
-interface ProtectedRouteProps {
-  children: React.ReactNode;
-}
-
-export default function ProtectedRoute({ children }: ProtectedRouteProps) {
-  const { isAuthenticated, isLoading } = useAuth();
+export default function ProtectedRoute({ children }: { children: React.ReactNode }) {
+  const { isAuthenticated } = useAuth();
+  const { isReady } = useAuthContext();
   const router = useRouter();
+  const timeoutRef = useRef(false);
 
   useEffect(() => {
-    // Si terminó de cargar y no está autenticado, va para el login
-    if (!isLoading && !isAuthenticated) {
+    if (isReady && !isAuthenticated) {
       router.replace("/auth");
     }
-  }, [isAuthenticated, isLoading, router]);
+  }, [isReady, isAuthenticated, router]);
 
-  // Pantalla de carga mientras verifica token o estado de hidratación
-  if (isLoading) {
+  useEffect(() => {
+    const id = setTimeout(() => {
+      if (!isReady) {
+        timeoutRef.current = true;
+        router.replace("/auth");
+      }
+    }, 5000);
+    return () => clearTimeout(id);
+  }, [isReady, router]);
+
+  if (!isReady && !timeoutRef.current) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-50">
         <div className="flex flex-col items-center gap-2">
-          {/* Un spinner simple con Tailwind v4 */}
           <div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-300 border-t-blue-600" />
           <p className="text-sm text-gray-500 font-medium">
             Verificando credenciales...
@@ -34,7 +40,6 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
     );
   }
 
-  // Si no está autenticado, bloqueamos el renderizado mientras actúa el router.push
   if (!isAuthenticated) return null;
 
   return <>{children}</>;

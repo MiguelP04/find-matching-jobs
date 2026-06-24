@@ -2,12 +2,12 @@
 
 import "reflect-metadata";
 import { useForm } from "react-hook-form";
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { classValidatorResolver } from "@hookform/resolvers/class-validator";
 import { RegisterDto, LoginDto } from "@find-matching-jobs/types";
 import { useRouter } from "next/navigation";
-import { useAuthStore } from "@/stores/authStore";
 import { useAuth } from "@/hooks/useAuth";
+import { useAuthContext } from "@/components/AuthInitializer";
 import { Mail, Lock, LogIn, Eye, EyeOff, GraduationCap } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -17,18 +17,12 @@ import Image from "next/image";
 
 export default function AuthPage() {
   const router = useRouter();
-  const {
-    login,
-    register: registerUser,
-    isLoading,
-    error,
-    clearError,
-    isAuthenticated,
-    isHydrated,
-  } = useAuth();
+  const { login, register: registerUser, error, clearError, isAuthenticated } = useAuth();
+  const { isReady } = useAuthContext();
   const [isRegister, setIsRegister] = useState(false);
   const [remember, setRemember] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   const resolver = useMemo(
     () => classValidatorResolver(isRegister ? RegisterDto : LoginDto),
@@ -42,32 +36,30 @@ export default function AuthPage() {
     reset,
   } = useForm<any>({ resolver });
 
-  useEffect(() => {
-    if (!isLoading && isAuthenticated) {
-      router.replace("/dashboard");
-    }
-  }, [isLoading, isAuthenticated, router]);
-
   const onSubmit = async (data: any) => {
-    if (isRegister) {
-      const { nombre, apellido, email, password } = data;
-      await registerUser({ nombre, apellido, email, password });
-      if (!useAuthStore.getState().error) {
+    setSubmitting(true);
+    try {
+      if (isRegister) {
+        await registerUser({
+          nombre: data.nombre,
+          apellido: data.apellido,
+          email: data.email,
+          password: data.password,
+        });
         setIsRegister(false);
         reset();
-      }
-    } else {
-      const { email, password } = data;
-      await login(email, password);
-      if (!useAuthStore.getState().error) {
+      } else {
+        await login(data.email, data.password);
         router.replace("/dashboard");
       }
+    } catch {
+      // error is already in store.error
+    } finally {
+      setSubmitting(false);
     }
   };
 
-  if (!isHydrated || isAuthenticated) {
-    return null;
-  }
+  if (!isReady) return null;
 
   return (
     <main className="flex min-h-screen">
@@ -285,8 +277,8 @@ export default function AuthPage() {
               )}
 
               <div className="flex flex-col gap-3">
-                <Button type="submit" disabled={isLoading} className="h-11">
-                  {isLoading ? (
+                <Button type="submit" disabled={submitting} className="h-11">
+                  {submitting ? (
                     "Cargando..."
                   ) : (
                     <>

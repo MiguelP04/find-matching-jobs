@@ -22,7 +22,7 @@ import { AuthModule } from './auth/auth.module';
     ThrottlerModule.forRoot([
       {
         ttl: 60000,
-        limit: 10,
+        limit: 100,
       },
     ]),
     TypeOrmModule.forRoot({
@@ -48,4 +48,4 @@ import { AuthModule } from './auth/auth.module';
     },
   ],
 })
-export class AppModule { }
+export class AppModule {}
