@@ -7,7 +7,7 @@ import { LayoutDashboard, Briefcase, Target, GraduationCap } from "lucide-react"
 const items = [
   { href: "/dashboard", label: "Inicio", icon: LayoutDashboard },
   { href: "/jobs", label: "Vacantes", icon: Briefcase },
-  { href: "/dashboard/matches", label: "Mis Matches", icon: Target },
+  { href: "/matches", label: "Mis Matches", icon: Target },
 ];
 
 export default function Sidebar({ open }: { open: boolean }) {

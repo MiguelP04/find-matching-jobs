@@ -12,8 +12,8 @@ const getScoreTextColor = (score: number) => {
   return 'text-red-700';
 };
 
-export const JobCard = ({ match }: { match: MatchResult }) => {
-  const { job, score, justificacion_ia, missing_skills } = match;
+export const MatchCard = ({ match }: { match: MatchResult }) => {
+  const { job, score, justificacion_ia, missing_skills, fecha_analisis } = match;
 
   return (
     <div className="p-4 border rounded-lg shadow-sm hover:shadow-md transition-shadow">
@@ -26,6 +26,9 @@ export const JobCard = ({ match }: { match: MatchResult }) => {
           </div>
           <p className="text-xs text-gray-400 mt-2">
             Publicado el: {new Date(job.fecha_publicacion).toLocaleDateString('es-ES')}
+          </p>
+          <p className="text-xs text-gray-400 mt-1">
+            Analizado el: {new Date(fecha_analisis).toLocaleDateString('es-ES', { hour: '2-digit', minute: '2-digit' })}
           </p>
         </div>
         <div className="flex flex-col items-center ml-4">
@@ -61,6 +64,17 @@ export const JobCard = ({ match }: { match: MatchResult }) => {
           </div>
         </div>
       )}
+
+      <div className="mt-3 flex justify-end">
+        <a
+          href={job.url_postulacion}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-sm text-blue-600 hover:text-blue-800 font-medium hover:underline"
+        >
+          Ver detalle de la vacante →
+        </a>
+      </div>
     </div>
   );
 };

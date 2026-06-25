@@ -2,16 +2,15 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { getMatches, refreshMatches, GetMatchesParams } from '../../services/jobService';
+import { getMatches, refreshMatches } from '../../services/matchService';
 import { MatchResult } from '../../types/job';
 import { ApiError } from '../../lib/api';
-import { JobCard } from './JobCard';
+import { MatchCard } from './MatchCard';
 import { Button } from '../ui/button';
-import Link from 'next/link';
 
 const PAGE_SIZE = 10;
 
-export const JobList = () => {
+export const MatchList = () => {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [matches, setMatches] = useState<MatchResult[]>([]);
@@ -28,7 +27,7 @@ export const JobList = () => {
     setError(null);
     setNoProfile(false);
     try {
-      const params: GetMatchesParams = {
+      const params = {
         minScore: searchParams.get('minScore') ? parseInt(searchParams.get('minScore')!) : undefined,
         page,
         limit: PAGE_SIZE,
@@ -131,7 +130,7 @@ export const JobList = () => {
           </p>
         </div>
       ) : (
-        matches.map((match) => <JobCard key={match.id} match={match} />)
+        matches.map((match) => <MatchCard key={match.id} match={match} />)
       )}
 
       {totalPages > 1 && (
@@ -141,7 +140,7 @@ export const JobList = () => {
             onClick={() => {
               const params = new URLSearchParams(searchParams);
               params.set('page', (page - 1).toString());
-              router.push(`/jobs?${params.toString()}`);
+              router.push(`/matches?${params.toString()}`);
             }}
           >
             Anterior
@@ -154,7 +153,7 @@ export const JobList = () => {
             onClick={() => {
               const params = new URLSearchParams(searchParams);
               params.set('page', (page + 1).toString());
-              router.push(`/jobs?${params.toString()}`);
+              router.push(`/matches?${params.toString()}`);
             }}
           >
             Siguiente

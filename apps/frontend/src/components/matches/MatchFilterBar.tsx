@@ -14,7 +14,7 @@ const SCORE_OPTIONS = [
   { value: '90', label: '90+ (Excelente)' },
 ];
 
-export const JobFilterBar = () => {
+export const MatchFilterBar = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -26,7 +26,7 @@ export const JobFilterBar = () => {
       params.delete(key);
     }
     params.set('page', '1');
-    router.push(`/jobs?${params.toString()}`);
+    router.push(`/matches?${params.toString()}`);
   };
 
   return (
@@ -49,7 +49,7 @@ export const JobFilterBar = () => {
 
       <Button
         variant="outline"
-        onClick={() => router.push('/jobs')}
+        onClick={() => router.push('/matches')}
       >
         Limpiar filtros
       </Button>

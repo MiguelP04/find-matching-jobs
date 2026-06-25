@@ -13,7 +13,7 @@ export interface MatchResult {
   id: number;
   score: number;
   justificacion_ia: string;
-  missing_skills: string[];
+  missing_skills: string[] | null;
   fecha_analisis: string;
   student_id: number;
   job_id: number;
