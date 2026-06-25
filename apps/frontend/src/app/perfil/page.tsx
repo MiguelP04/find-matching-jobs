@@ -39,6 +39,7 @@ export default function ProfileEditPage() {
   const [catalogSkills, setCatalogSkills] = useState<CatalogSkill[]>([]);
   const [initialSkills, setInitialSkills] = useState<SkillFormValue[]>([]);
   const [selectedCatalogSkillId, setSelectedCatalogSkillId] = useState("");
+  const [hasProfile, setHasProfile] = useState(false);
 
   const { register, control, handleSubmit, setValue, reset } =
     useForm<ProfileFormInputs>({
@@ -98,6 +99,7 @@ export default function ProfileEditPage() {
         setInitialSkills(mappedSkills);
 
         if (profileData) {
+          setHasProfile(true);
           let frontendModalidad: "" | "REMOTO" | "PRESENCIAL" | "HÍBRIDO" = "";
           if (profileData?.modalidad_preferida) {
             const rawMod = profileData.modalidad_preferida.toLowerCase();
@@ -171,7 +173,12 @@ export default function ProfileEditPage() {
         modalidad_preferida: backendModalidad,
       };
 
-      await api.patch("/profiles/me", backendProfilePayload, accessToken);
+      if (hasProfile) {
+        await api.patch("/profiles/me", backendProfilePayload, accessToken);
+      } else {
+        await api.post("/profiles", backendProfilePayload, accessToken);
+        setHasProfile(true);
+      }
 
       const currentSkills = data.skills;
       const currentDbIds = new Set(currentSkills.map((s) => s.dbId).filter(Boolean));
