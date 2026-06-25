@@ -12,9 +12,11 @@ export interface FieldError {
 
 export class ApiError extends Error {
   fieldErrors: FieldError[];
-  constructor(message: string, fieldErrors: FieldError[]) {
+  status: number;
+  constructor(message: string, fieldErrors: FieldError[], status?: number) {
     super(message);
     this.fieldErrors = fieldErrors;
+    this.status = status ?? 0;
   }
 }
 
@@ -53,10 +55,11 @@ async function request<T>(
       throw new ApiError(
         fieldErrors.map((f) => f.message).join(". "),
         fieldErrors,
+        res.status,
       );
     }
 
-    throw new ApiError(body?.message || `Error ${res.status}`, []);
+    throw new ApiError(body?.message || `Error ${res.status}`, [], res.status);
   }
   return res.json();
 }
