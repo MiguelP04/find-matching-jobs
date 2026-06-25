@@ -1,15 +1,65 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useAuthStore } from "../stores/authStore";
+import { api } from "../lib/api";
+import { getSessionCookie } from "../lib/cookies";
 
 export function AuthInitializer({ children }: { children: React.ReactNode }) {
-  const checkAuth = useAuthStore((state) => state.checkAuth);
+  const [isReady, setIsReady] = useState(false);
+  const logout = useAuthStore((s) => s.logout);
+  const router = useRouter();
 
   useEffect(() => {
-    // Se ejecuta una sola vez al cargar o refrescar la aplicación entera
-    checkAuth();
-  }, [checkAuth]);
+    let cancelled = false;
+
+    async function validate() {
+      const token = getSessionCookie();
+
+      if (!token) {
+        logout();
+        if (!cancelled) setIsReady(true);
+        return;
+      }
+
+      try {
+        const profileData = await api.get<any>("/profiles/me", token);
+        if (cancelled) return;
+        useAuthStore.setState({
+          user: profileData.user,
+          accessToken: token,
+          isAuthenticated: true,
+        });
+      } catch {
+        if (!cancelled) {
+          logout();
+          router.replace("/auth");
+        }
+      } finally {
+        if (!cancelled) setIsReady(true);
+      }
+    }
+
+    validate();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  if (!isReady) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-slate-50">
+        <div className="flex flex-col items-center gap-2">
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-300 border-t-blue-600" />
+          <p className="text-sm text-gray-500 font-medium">
+            Verificando credenciales...
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return <>{children}</>;
 }

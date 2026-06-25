@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { useForm, useFieldArray } from "react-hook-form";
 import { api } from "@/lib/api";
 import { useAuthStore } from "@/stores/authStore";
-import ProtectedRoute from "@/components/ProtectedRoute";
 
 import { ProfileHeader } from "@/components/perfil/ProfileHeader";
 import { ProfileBaseForm } from "@/components/perfil/ProfileBaseForm";
@@ -239,59 +238,57 @@ export default function ProfileEditPage() {
   };
 
   return (
-    <ProtectedRoute>
-      <div className="min-h-screen bg-gray-50/50 p-6 md:p-10">
-        <div className="max-w-4xl mx-auto flex flex-col gap-6">
-          <ProfileHeader
-            isSubmitting={isSubmitting}
-            onSaveTrigger={handleSubmit(onSubmit)}
+    <div className="min-h-screen bg-gray-50/50 p-6 md:p-10">
+      <div className="max-w-4xl mx-auto flex flex-col gap-6">
+        <ProfileHeader
+          isSubmitting={isSubmitting}
+          onSaveTrigger={handleSubmit(onSubmit)}
+        />
+
+        {globalError && (
+          <div className="p-4 bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg shadow-xs">
+            {globalError}
+          </div>
+        )}
+        {successMessage && (
+          <div className="p-4 bg-green-50 border border-green-200 text-green-700 text-sm rounded-lg shadow-xs">
+            {successMessage}
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-8">
+          <ProfileBaseForm register={register} />
+
+          <SkillsForm
+            fields={fields}
+            remove={remove}
+            setValue={setValue}
+            catalogSkills={catalogSkills}
+            selectedCatalogSkillId={selectedCatalogSkillId}
+            setSelectedCatalogSkillId={setSelectedCatalogSkillId}
+            onAddSkill={handleAddSkill}
           />
 
-          {globalError && (
-            <div className="p-4 bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg shadow-xs">
-              {globalError}
-            </div>
-          )}
-          {successMessage && (
-            <div className="p-4 bg-green-50 border border-green-200 text-green-700 text-sm rounded-lg shadow-xs">
-              {successMessage}
-            </div>
-          )}
-
-          <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-8">
-            <ProfileBaseForm register={register} />
-
-            <SkillsForm
-              fields={fields}
-              remove={remove}
-              setValue={setValue}
-              catalogSkills={catalogSkills}
-              selectedCatalogSkillId={selectedCatalogSkillId}
-              setSelectedCatalogSkillId={setSelectedCatalogSkillId}
-              onAddSkill={handleAddSkill}
-            />
-
-            <div className="flex justify-end gap-4 border-t border-gray-200 pt-6">
-              <button
-                type="button"
-                onClick={() => {
-                  if (confirm("¿Descartar cambios no guardados?")) reset();
-                }}
-                className="inline-flex items-center justify-center rounded-lg border border-gray-300 bg-white hover:bg-gray-50 text-gray-700 h-11 px-6 text-sm font-medium transition-colors"
-              >
-                Descartar
-              </button>
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="inline-flex items-center justify-center rounded-lg bg-amber-500 hover:bg-amber-600 text-gray-900 font-bold h-11 px-8 text-sm shadow-sm transition-colors disabled:opacity-50"
-              >
-                {isSubmitting ? "Sincronizando..." : "GUARDAR PERFIL"}
-              </button>
-            </div>
-          </form>
-        </div>
+          <div className="flex justify-end gap-4 border-t border-gray-200 pt-6">
+            <button
+              type="button"
+              onClick={() => {
+                if (confirm("¿Descartar cambios no guardados?")) reset();
+              }}
+              className="inline-flex items-center justify-center rounded-lg border border-gray-300 bg-white hover:bg-gray-50 text-gray-700 h-11 px-6 text-sm font-medium transition-colors"
+            >
+              Descartar
+            </button>
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="inline-flex items-center justify-center rounded-lg bg-amber-500 hover:bg-amber-600 text-gray-900 font-bold h-11 px-8 text-sm shadow-sm transition-colors disabled:opacity-50"
+            >
+              {isSubmitting ? "Sincronizando..." : "GUARDAR PERFIL"}
+            </button>
+          </div>
+        </form>
       </div>
-    </ProtectedRoute>
+    </div>
   );
 }
