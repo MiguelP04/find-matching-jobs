@@ -1,0 +1,26 @@
+"use client";
+
+import DashboardLayout from "@/components/dashboard/DashboardLayout";
+import WelcomeHeader from "@/components/dashboard/WelcomeHeader";
+import ProfileCard from "@/components/dashboard/ProfileCard";
+import SkillsCard from "@/components/dashboard/SkillsCard";
+import MatchesCard from "@/components/dashboard/MatchesCard";
+import { useDashboard } from "@/hooks/useDashboard";
+
+export default function DashboardPage() {
+  const { profile, skills, loading, errors } = useDashboard();
+  return (
+    <DashboardLayout>
+      <WelcomeHeader />
+
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <ProfileCard profile={profile} loading={loading} error={errors.profile} />
+        <SkillsCard skills={skills} loading={loading} error={errors.skills} />
+      </div>
+
+      <div className="mt-4">
+        <MatchesCard />
+      </div>
+    </DashboardLayout>
+  );
+}

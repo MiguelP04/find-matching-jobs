@@ -1,0 +1,35 @@
+{
+  "name": "@find-matching-jobs/types",
+  "version": "1.0.0",
+  "description": "Shared TypeScript DTOs for find-matching-jobs",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "clean": "rm -rf dist",
+    "prepare": "pnpm run build"
+  },
+  "keywords": [
+    "types",
+    "dto",
+    "shared"
+  ],
+  "author": "",
+  "license": "UNLICENSED",
+  "dependencies": {
+    "class-transformer": "^0.5.1",
+    "class-validator": "^0.15.1"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.3"
+  }
+}
