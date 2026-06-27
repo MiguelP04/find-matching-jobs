@@ -4,18 +4,30 @@ import { Repository, ILike, MoreThanOrEqual, In } from 'typeorm';
 import { subDays } from 'date-fns';
 import { Job } from './entities/job.entity';
 import { JobData } from './types/job-data';
+import { JobsFilterDto } from './dto/jobs-filter.dto';
 
 @Injectable()
 export class JobsService {
   constructor(
     @InjectRepository(Job)
     private readonly jobsRepository: Repository<Job>,
-  ) { }
+  ) {}
 
-  async findAll(page = 1, limit = 10) {
+  async findAll(filters: JobsFilterDto) {
+    const { page = 1, limit = 10, ubicacion, empresa } = filters;
     const thirtyDaysAgo = subDays(new Date(), 30);
+
+    const where: any = { fecha_publicacion: MoreThanOrEqual(thirtyDaysAgo) };
+
+    if (ubicacion) {
+      where.ubicacion = ILike(`%${ubicacion}%`);
+    }
+    if (empresa) {
+      where.empresa = ILike(`%${empresa}%`);
+    }
+
     const [jobs, total] = await this.jobsRepository.findAndCount({
-      where: { fecha_publicacion: MoreThanOrEqual(thirtyDaysAgo) },
+      where,
       skip: (page - 1) * limit,
       take: limit,
       order: { fecha_publicacion: 'DESC' },
@@ -32,9 +44,18 @@ export class JobsService {
   async search(query: string, location?: string, page = 1, limit = 10) {
     const thirtyDaysAgo = subDays(new Date(), 30);
     const where: any[] = [
-      { titulo: ILike(`%${query}%`), fecha_publicacion: MoreThanOrEqual(thirtyDaysAgo) },
-      { empresa: ILike(`%${query}%`), fecha_publicacion: MoreThanOrEqual(thirtyDaysAgo) },
-      { descripcion: ILike(`%${query}%`), fecha_publicacion: MoreThanOrEqual(thirtyDaysAgo) },
+      {
+        titulo: ILike(`%${query}%`),
+        fecha_publicacion: MoreThanOrEqual(thirtyDaysAgo),
+      },
+      {
+        empresa: ILike(`%${query}%`),
+        fecha_publicacion: MoreThanOrEqual(thirtyDaysAgo),
+      },
+      {
+        descripcion: ILike(`%${query}%`),
+        fecha_publicacion: MoreThanOrEqual(thirtyDaysAgo),
+      },
     ];
 
     if (location) {
@@ -50,7 +71,9 @@ export class JobsService {
     return { jobs, total, page, limit };
   }
 
-  async saveJobs(jobs: JobData[]): Promise<{ inserted: number; skipped: number }> {
+  async saveJobs(
+    jobs: JobData[],
+  ): Promise<{ inserted: number; skipped: number }> {
     const externalIds = jobs.map((j) => j.external_id).filter(Boolean);
     if (externalIds.length === 0) return { inserted: 0, skipped: 0 };
 

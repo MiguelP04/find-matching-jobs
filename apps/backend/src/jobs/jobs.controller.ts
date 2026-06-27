@@ -5,11 +5,8 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { JsearchService } from '../jsearch/jsearch.service';
 import { JobsService } from './jobs.service';
-import {
-  PaginationDto,
-  SearchJobsDto,
-  UserRole,
-} from '@find-matching-jobs/types';
+import { SearchJobsDto, UserRole } from '@find-matching-jobs/types';
+import { JobsFilterDto } from './dto/jobs-filter.dto';
 
 @Controller('jobs')
 @ApiTags('jobs')
@@ -21,8 +18,8 @@ export class JobsController {
   ) {}
 
   @Get()
-  findAll(@Query() query: PaginationDto) {
-    return this.jobsService.findAll(query.page, query.limit);
+  findAll(@Query() query: JobsFilterDto) {
+    return this.jobsService.findAll(query);
   }
 
   @Get('search')
