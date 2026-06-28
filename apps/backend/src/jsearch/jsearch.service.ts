@@ -1,4 +1,8 @@
-import { Injectable, Logger, InternalServerErrorException } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  InternalServerErrorException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import axios from 'axios';
 import { JobData } from '../jobs/types/job-data';
@@ -36,13 +40,17 @@ export class JsearchService {
         titulo: j.job_title,
         empresa: j.employer_name,
         descripcion: j.job_description ?? '',
-        ubicacion: [j.job_city, j.job_state, j.job_country].filter(Boolean).join(', '),
+        ubicacion: [j.job_city, j.job_state, j.job_country]
+          .filter(Boolean)
+          .join(', '),
         url_postulacion: j.job_apply_link ?? '',
         fecha_publicacion: new Date(j.job_posted_at_timestamp * 1000),
       }));
     } catch (error: any) {
       this.logger.error(`JSearch API error: ${error.message}`);
-      throw new InternalServerErrorException('Error al obtener vacantes de JSearch');
+      throw new InternalServerErrorException(
+        'Error al obtener vacantes de JSearch',
+      );
     }
   }
 

@@ -26,3 +26,10 @@ export interface MatchesResponse {
   page: number;
   limit: number;
 }
+
+export interface JobsResponse {
+  jobs: Job[];
+  total: number;
+  page: number;
+  limit: number;
+}

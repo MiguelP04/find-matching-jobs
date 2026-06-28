@@ -1,35 +1,41 @@
-import { Entity, PrimaryGeneratedColumn, Column, OneToMany, Index } from 'typeorm'
-import { MatchResult } from '../../matching/entities/match-result.entity'
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  OneToMany,
+  Index,
+} from 'typeorm';
+import { MatchResult } from '../../matching/entities/match-result.entity';
 
 @Entity('jobs')
 export class Job {
   @PrimaryGeneratedColumn()
-  id: number
+  id: number;
 
   @Column({ nullable: true })
-  external_id: string
+  external_id: string;
 
   @Index()
   @Column()
-  titulo: string
+  titulo: string;
 
   @Index()
   @Column()
-  empresa: string
+  empresa: string;
 
   @Column({ type: 'text' })
-  descripcion: string
+  descripcion: string;
 
   @Index()
   @Column()
-  ubicacion: string
+  ubicacion: string;
 
   @Column()
-  url_postulacion: string
+  url_postulacion: string;
 
   @Column()
-  fecha_publicacion: Date
+  fecha_publicacion: Date;
 
   @OneToMany(() => MatchResult, (matchResult) => matchResult.job)
-  matchResults: MatchResult[]
+  matchResults: MatchResult[];
 }

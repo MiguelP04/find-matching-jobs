@@ -6,6 +6,7 @@ import { getMatches, refreshMatches } from '../../services/matchService';
 import { MatchResult } from '../../types/job';
 import { ApiError } from '../../lib/api';
 import { MatchCard } from './MatchCard';
+import { MatchCardSkeleton } from './MatchCardSkeleton';
 import { Button } from '../ui/button';
 
 const PAGE_SIZE = 10;
@@ -103,19 +104,16 @@ export const MatchList = () => {
   }
 
   if (loading && matches.length === 0) {
-    return (
-      <div className="flex flex-col items-center gap-4">
-        <div className="animate-pulse space-y-4 w-full">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="h-32 bg-gray-100 rounded-lg" />
-          ))}
-        </div>
-      </div>
-    );
+    return <MatchCardSkeleton count={3} />;
   }
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-4 relative">
+      {loading && matches.length > 0 && (
+        <div className="absolute inset-0 bg-white/60 flex items-center justify-center z-10 rounded-lg">
+          <div className="size-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
+        </div>
+      )}
       <div className="flex justify-end">
         <Button onClick={handleRefresh} disabled={refreshing}>
           {refreshing ? 'Actualizando...' : 'Actualizar matches'}
