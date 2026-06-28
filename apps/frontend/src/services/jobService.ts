@@ -1,5 +1,5 @@
 import { api } from "../lib/api";
-import { Job, JobsResponse } from "../types/job";
+import { Job, JobDetailResponse, JobsResponse } from "../types/job";
 import { useAuthStore } from "../stores/authStore";
 
 export interface GetJobsParams {
@@ -27,4 +27,9 @@ export const getJobs = async (
   );
 
   return { jobs: res.jobs, total: res.total };
+};
+
+export const getJobById = async (id: number): Promise<JobDetailResponse> => {
+  const token = useAuthStore.getState().accessToken;
+  return api.get<JobDetailResponse>(`/jobs/${id}`, token ?? undefined);
 };

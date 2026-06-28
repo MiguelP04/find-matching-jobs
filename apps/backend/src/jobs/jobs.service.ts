@@ -3,6 +3,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, ILike, MoreThanOrEqual, In } from 'typeorm';
 import { subDays } from 'date-fns';
 import { Job } from './entities/job.entity';
+import { MatchResult } from '../matching/entities/match-result.entity';
+import { Profile } from '../profiles/entities/profile.entity';
 import { JobData } from './types/job-data';
 import { JobsFilterDto } from './dto/jobs-filter.dto';
 
@@ -11,6 +13,10 @@ export class JobsService {
   constructor(
     @InjectRepository(Job)
     private readonly jobsRepository: Repository<Job>,
+    @InjectRepository(MatchResult)
+    private readonly matchResultRepo: Repository<MatchResult>,
+    @InjectRepository(Profile)
+    private readonly profileRepo: Repository<Profile>,
   ) {}
 
   async findAll(filters: JobsFilterDto) {
@@ -35,10 +41,23 @@ export class JobsService {
     return { jobs, total, page, limit };
   }
 
-  async findOne(id: number) {
+  async findOne(id: number, userId?: number) {
     const job = await this.jobsRepository.findOne({ where: { id } });
     if (!job) throw new NotFoundException('Vacante no encontrada');
-    return job;
+
+    let match: MatchResult | null = null;
+    if (userId) {
+      const profile = await this.profileRepo.findOne({
+        where: { user_id: userId },
+      });
+      if (profile) {
+        match = await this.matchResultRepo.findOne({
+          where: { student_id: profile.id, job_id: id },
+        });
+      }
+    }
+
+    return { ...job, match };
   }
 
   async search(query: string, location?: string, page = 1, limit = 10) {
