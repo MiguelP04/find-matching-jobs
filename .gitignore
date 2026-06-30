@@ -36,3 +36,6 @@ Thumbs.db
 # Temp
 .tmp/
 .temp/
+
+# Agent skills (local to each dev)
+.agents/
