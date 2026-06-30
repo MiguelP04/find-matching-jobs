@@ -1,0 +1,17 @@
+{
+  "version": 2,
+  "buildCommand": "npx nest build",
+  "installCommand": "pnpm install",
+  "functions": {
+    "api/index.js": {
+      "memory": 512,
+      "maxDuration": 30
+    }
+  },
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "api/index.js"
+    }
+  ]
+}

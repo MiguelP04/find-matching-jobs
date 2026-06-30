@@ -31,10 +31,17 @@ export function AuthInitializer({ children }: { children: React.ReactNode }) {
           accessToken: token,
           isAuthenticated: true,
         });
-      } catch {
+      } catch (err: any) {
         if (!cancelled) {
-          logout();
-          router.replace("/auth");
+          if (err?.status === 401) {
+            logout();
+            router.replace("/auth");
+          } else {
+            useAuthStore.setState({
+              accessToken: token,
+              isAuthenticated: true,
+            });
+          }
         }
       } finally {
         if (!cancelled) setIsReady(true);

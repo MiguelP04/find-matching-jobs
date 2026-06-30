@@ -27,6 +27,10 @@ export interface MatchesResponse {
   limit: number;
 }
 
+export interface JobDetailResponse extends Job {
+  match: Omit<MatchResult, 'job'> | null;
+}
+
 export interface JobsResponse {
   jobs: Job[];
   total: number;

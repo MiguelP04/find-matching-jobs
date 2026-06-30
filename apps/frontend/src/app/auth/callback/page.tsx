@@ -32,7 +32,7 @@ function CallbackContent() {
         apellido: payload.apellido,
       },
     })
-    router.push('/')
+    router.push('/dashboard')
   }, [])
 
   return <p>Iniciando sesión...</p>

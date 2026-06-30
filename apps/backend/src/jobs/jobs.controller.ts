@@ -1,8 +1,18 @@
-import { Controller, Get, Post, Param, Query, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Param,
+  Query,
+  UseGuards,
+  ParseIntPipe,
+} from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import type { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 import { JsearchService } from '../jsearch/jsearch.service';
 import { JobsService } from './jobs.service';
 import { SearchJobsDto, UserRole } from '@find-matching-jobs/types';
@@ -46,7 +56,10 @@ export class JobsController {
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.jobsService.findOne(Number(id));
+  findOne(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return this.jobsService.findOne(id, user.userId);
   }
 }

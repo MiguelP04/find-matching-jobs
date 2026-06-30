@@ -40,7 +40,7 @@ async function request<T>(
     body: options.body ? JSON.stringify(options.body) : undefined,
     cache: "no-store",
   });
-  if (res.status === 401) {
+  if (res.status === 401 && !path.startsWith("/auth")) {
     clearSessionCookie();
     useAuthStore.getState().logout();
     window.location.href = "/auth";
