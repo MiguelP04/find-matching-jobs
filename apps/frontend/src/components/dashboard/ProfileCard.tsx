@@ -26,7 +26,7 @@ export default function ProfileCard({
 
   if (error) {
     return (
-      <div className="rounded-xl border bg-white p-5 text-sm text-red-500">
+      <div className="rounded-xl border bg-card p-5 text-sm text-destructive">
         {error}
       </div>
     );
@@ -37,32 +37,34 @@ export default function ProfileCard({
   const pct = Math.round((filled / total) * 100);
 
   return (
-    <div className="rounded-xl border bg-blue-950 p-6 pb-16 w-64 relative overflow-hidden">
-      <CircleCheckBig className="absolute -bottom-4 -right-4 size-28 text-white/10 pointer-events-none" />
+    <div className="relative rounded-xl border border-secondary/20 bg-gradient-to-br from-secondary to-[#0f1f5a] p-6 shadow-lg overflow-hidden">
+      <div className="absolute left-0 top-0 h-full w-[3px] bg-primary" />
+
+      <CircleCheckBig className="absolute -bottom-4 -right-4 size-20 text-white/[0.06] pointer-events-none" />
 
       <div className="relative z-10">
         <h2 className="mb-3 text-2xl font-semibold text-white">Mi Perfil</h2>
 
-      <p className="mb-2 text-xs text-gray-500">
-        {filled} de {total} campos completados
-      </p>
-      <div className="mb-6">
-        <div className="h-2 w-full overflow-hidden rounded-full bg-gray-200">
-          <div
-            className="h-full rounded-full bg-primary transition-all"
-            style={{ width: `${pct}%` }}
-          />
+        <p className="mb-2 text-xs text-blue-200">
+          {filled} de {total} campos completados
+        </p>
+        <div className="mb-6">
+          <div className="h-2 w-full overflow-hidden rounded-full bg-white/20">
+            <div
+              className="h-full rounded-full bg-primary transition-all"
+              style={{ width: `${pct}%` }}
+            />
+          </div>
         </div>
-      </div>
 
-      {filled < total && (
-        <Link
-          href="/perfil"
-          className="inline-block rounded-lg bg-primary px-4 py-4 text-sm font-semibold text-secondary text-center block w-full transition-colors hover:bg-primary/80"
-        >
-          Completar perfil
-        </Link>
-      )}
+        {filled < total && (
+          <Link
+            href="/perfil"
+            className="inline-flex items-center justify-center rounded-lg bg-primary px-4 py-3 text-sm font-semibold text-secondary transition-colors hover:bg-primary/80 w-full"
+          >
+            Completar perfil
+          </Link>
+        )}
       </div>
     </div>
   );

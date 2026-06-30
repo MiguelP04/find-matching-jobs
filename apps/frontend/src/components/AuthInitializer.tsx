@@ -57,10 +57,10 @@ export function AuthInitializer({ children }: { children: React.ReactNode }) {
 
   if (!isReady) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-50">
+      <div className="flex min-h-screen items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-2">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-300 border-t-blue-600" />
-          <p className="text-sm text-gray-500 font-medium">
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-muted border-t-primary" />
+          <p className="text-sm text-muted-foreground font-medium">
             Verificando credenciales...
           </p>
         </div>

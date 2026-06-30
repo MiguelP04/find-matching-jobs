@@ -61,21 +61,27 @@ export const JobList = () => {
   }
 
   return (
-    <div className="flex flex-col gap-4 relative">
+    <div className="flex flex-col gap-3 relative">
+      <div className="flex items-center justify-between mb-1">
+        <h2 className="text-sm font-medium text-foreground">Vacantes disponibles</h2>
+        {!loading && <span className="text-xs text-muted-foreground">{total} resultados</span>}
+      </div>
       {loading && jobs.length > 0 && (
-        <div className="absolute inset-0 bg-white/60 flex items-center justify-center z-10 rounded-lg">
-          <div className="size-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
+        <div className="absolute inset-0 bg-background/60 flex items-center justify-center z-10 rounded-lg">
+          <div className="size-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
         </div>
       )}
       {jobs.length === 0 ? (
         <div className="text-center py-8">
-          <p className="text-gray-500">No se encontraron vacantes.</p>
-          <p className="text-sm text-gray-400 mt-1">
+          <p className="text-sm text-muted-foreground">No se encontraron vacantes.</p>
+          <p className="text-xs text-muted-foreground mt-1">
             Intenta ajustar los filtros de búsqueda.
           </p>
         </div>
       ) : (
-        jobs.map((job) => <JobCard key={job.id} job={job} />)
+        <div className="flex flex-col gap-0.5 bg-card border border-border rounded-xl shadow-sm">
+          {jobs.map((job) => <JobCard key={job.id} job={job} />)}
+        </div>
       )}
 
       {totalPages > 1 && (
@@ -90,7 +96,7 @@ export const JobList = () => {
           >
             Anterior
           </Button>
-          <span className="text-sm text-gray-500">
+          <span className="text-xs text-muted-foreground">
             Página {page} de {totalPages}
           </span>
           <Button

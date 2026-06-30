@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
+import { Search, Building2 } from "lucide-react";
 
 export const JobFilterBar = () => {
   const router = useRouter();
@@ -31,31 +32,37 @@ export const JobFilterBar = () => {
   };
 
   return (
-    <div className="flex flex-col gap-4 p-4 border rounded-lg bg-gray-50">
-      <h3 className="font-semibold text-sm text-gray-700">Filtros</h3>
+    <div className="flex flex-col gap-3 p-3 border rounded-lg bg-muted">
+      <h3 className="font-semibold text-xs text-foreground uppercase tracking-wider">Filtros</h3>
 
-      <label className="text-xs text-gray-500">Ubicación</label>
-      <Input
-        placeholder="Ej: Caracas"
-        value={ubicacion}
-        onChange={(e) => {
-          setUbicacion(e.target.value);
-          handleFilterChange("ubicacion", e.target.value);
-        }}
-      />
+      <div className="relative">
+        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground pointer-events-none" />
+        <Input
+          placeholder="Ubicación"
+          value={ubicacion}
+          onChange={(e) => {
+            setUbicacion(e.target.value);
+            handleFilterChange("ubicacion", e.target.value);
+          }}
+          className="h-8 pl-7 text-xs"
+        />
+      </div>
 
-      <label className="text-xs text-gray-500">Empresa</label>
-      <Input
-        placeholder="Ej: Acme"
-        value={empresa}
-        onChange={(e) => {
-          setEmpresa(e.target.value);
-          handleFilterChange("empresa", e.target.value);
-        }}
-      />
+      <div className="relative">
+        <Building2 className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground pointer-events-none" />
+        <Input
+          placeholder="Empresa"
+          value={empresa}
+          onChange={(e) => {
+            setEmpresa(e.target.value);
+            handleFilterChange("empresa", e.target.value);
+          }}
+          className="h-8 pl-7 text-xs"
+        />
+      </div>
 
-      <Button variant="outline" onClick={() => router.push("/jobs")}>
-        Limpiar filtros
+      <Button variant="outline" size="sm" onClick={() => router.push("/jobs")}>
+        Limpiar
       </Button>
     </div>
   );

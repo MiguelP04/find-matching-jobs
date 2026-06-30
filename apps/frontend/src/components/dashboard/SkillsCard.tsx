@@ -3,6 +3,7 @@
 import { StudentSkill } from "@/hooks/useDashboard";
 import SkeletonCard from "./SkeletonCard";
 import Link from "next/link";
+import { Target } from "lucide-react";
 
 export default function SkillsCard({
   skills,
@@ -17,7 +18,7 @@ export default function SkillsCard({
 
   if (error) {
     return (
-      <div className="rounded-xl border bg-white p-5 text-sm text-red-500">
+      <div className="rounded-xl border bg-card p-5 text-sm text-destructive">
         {error}
       </div>
     );
@@ -26,19 +27,19 @@ export default function SkillsCard({
   const visible = skills.slice(0, 3);
 
   return (
-    <div className="rounded-xl border bg-white p-5">
-      <h2 className="mb-3 text-sm font-semibold text-gray-700">🎯 Mis Skills</h2>
+    <div className="rounded-xl border bg-card p-5">
+      <h2 className="mb-3 text-sm font-semibold text-foreground flex items-center gap-1.5"><Target className="size-4" /> Mis Skills</h2>
 
       {visible.length === 0 ? (
-        <p className="text-xs text-gray-400">
+        <p className="text-xs text-muted-foreground">
           Aún no tienes skills registradas.
         </p>
       ) : (
         <ul className="mb-3 space-y-1.5">
           {visible.map((s) => (
             <li key={s.id} className="flex items-center justify-between text-xs">
-              <span className="text-gray-700">{s.skill.nombre}</span>
-              <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-medium text-gray-500">
+              <span className="text-foreground">{s.skill.nombre}</span>
+              <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
                 {s.nivel}
               </span>
             </li>
@@ -47,8 +48,8 @@ export default function SkillsCard({
       )}
 
       <div className="flex items-center justify-between text-xs">
-        <span className="text-gray-400">Total: {skills.length} skills</span>
-        <Link href="/dashboard/skills" className="font-medium text-primary hover:underline">
+        <span className="text-muted-foreground">Total: {skills.length} skills</span>
+        <Link href="/perfil" className="font-medium text-primary hover:underline">
           Gestionar Skills →
         </Link>
       </div>

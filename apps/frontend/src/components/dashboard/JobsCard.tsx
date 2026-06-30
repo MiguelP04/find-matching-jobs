@@ -2,6 +2,7 @@
 
 import SkeletonCard from "./SkeletonCard";
 import Link from "next/link";
+import { Search, Building2, MapPin, Clock } from "lucide-react";
 
 function timeAgo(date: string) {
   const diff = Date.now() - new Date(date).getTime();
@@ -32,18 +33,18 @@ export default function JobsCard({
 
   if (error) {
     return (
-      <div className="rounded-xl border bg-white p-5 text-sm text-red-500">
+      <div className="rounded-xl border bg-card p-5 text-sm text-destructive">
         {error}
       </div>
     );
   }
 
   return (
-    <div className="rounded-xl border bg-white p-5">
-      <h2 className="mb-3 text-sm font-semibold text-gray-700">🔍 Vacantes Recientes</h2>
+    <div className="rounded-xl border bg-card p-5">
+      <h2 className="mb-3 text-sm font-semibold text-foreground flex items-center gap-1.5"><Search className="size-4" /> Vacantes Recientes</h2>
 
       {jobs.length === 0 ? (
-        <p className="text-xs text-gray-400">
+          <p className="text-xs text-muted-foreground">
           No hay vacantes disponibles aún
         </p>
       ) : (
@@ -51,12 +52,21 @@ export default function JobsCard({
           {jobs.map((job) => (
             <li key={job.id} className="flex items-center justify-between border-b pb-2 last:border-0">
               <div>
-                <p className="text-sm font-medium text-gray-800">{job.titulo}</p>
-                <p className="text-xs text-gray-500">
-                  {job.empresa} • {job.ubicacion}
+                <p className="text-sm font-medium text-foreground">{job.titulo}</p>
+                <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
+                  <Building2 className="size-3 shrink-0" />
+                  <span>{job.empresa}</span>
+                  {job.ubicacion && (
+                    <>
+                      <span className="text-border">·</span>
+                      <MapPin className="size-3 shrink-0" />
+                      <span>{job.ubicacion}</span>
+                    </>
+                  )}
                 </p>
               </div>
-              <span className="shrink-0 text-[10px] text-gray-400">
+              <span className="shrink-0 text-[10px] text-muted-foreground flex items-center gap-1">
+                <Clock className="size-3" />
                 {timeAgo(job.fecha_publicacion)}
               </span>
             </li>

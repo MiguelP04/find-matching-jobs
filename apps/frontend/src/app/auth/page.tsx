@@ -7,7 +7,7 @@ import { classValidatorResolver } from "@hookform/resolvers/class-validator";
 import { RegisterDto, LoginDto } from "@find-matching-jobs/types";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
-import { Mail, Lock, LogIn, Eye, EyeOff, GraduationCap } from "lucide-react";
+import { Mail, Lock, LogIn, Eye, EyeOff, GraduationCap, LoaderCircle } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -95,10 +95,10 @@ export default function AuthPage() {
             </TabsList>
 
             <div className="mt-6 text-center">
-              <h1 className="text-xl font-bold text-secondary">
+              <h1 className="text-xl font-bold text-foreground">
                 {isRegister ? "Crear cuenta" : "Bienvenido de nuevo"}
               </h1>
-              <p className="text-sm text-gray-500 mt-1">
+              <p className="text-sm text-muted-foreground mt-1">
                 {isRegister
                   ? "Regístrate para empezar"
                   : "Ingresa tus credenciales institucionales"}
@@ -113,7 +113,7 @@ export default function AuthPage() {
               <TabsContent value="register" className="flex flex-col gap-4">
                 <div className="flex gap-3">
                   <div className="flex flex-1 flex-col gap-1.5">
-                    <label className="text-sm font-medium text-gray-700">
+                    <label className="text-sm font-medium text-foreground">
                       Nombre
                     </label>
                     <Input
@@ -129,7 +129,7 @@ export default function AuthPage() {
                     )}
                   </div>
                   <div className="flex flex-1 flex-col gap-1.5">
-                    <label className="text-sm font-medium text-gray-700">
+                    <label className="text-sm font-medium text-foreground">
                       Apellido
                     </label>
                     <Input
@@ -146,11 +146,11 @@ export default function AuthPage() {
                   </div>
                 </div>
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-sm font-medium text-gray-700">
-                    Email
+                  <label className="text-sm font-medium text-foreground">
+                    Contraseña
                   </label>
                   <div className="relative">
-                    <Mail className="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
+                    <Lock className="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
                     <Input
                       type="email"
                       placeholder="tu@email.com"
@@ -199,7 +199,7 @@ export default function AuthPage() {
 
               <TabsContent value="login" className="flex flex-col gap-4">
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-sm font-medium text-gray-700">
+                  <label className="text-sm font-medium text-foreground">
                     Email
                   </label>
                   <div className="relative">
@@ -253,7 +253,7 @@ export default function AuthPage() {
 
               {!isRegister && (
                 <div className="flex items-center justify-between text-sm">
-                  <label className="flex items-center gap-2 cursor-pointer text-gray-600">
+                  <label className="flex items-center gap-2 cursor-pointer text-muted-foreground">
                     <Checkbox
                       checked={remember}
                       onCheckedChange={(checked) =>
@@ -262,7 +262,7 @@ export default function AuthPage() {
                     />
                     Recordarme
                   </label>
-                  <span className="text-gray-400 cursor-not-allowed">
+                  <span className="text-muted-foreground cursor-not-allowed">
                     ¿Olvidaste tu contraseña?
                   </span>
                 </div>
@@ -275,7 +275,7 @@ export default function AuthPage() {
               <div className="flex flex-col gap-3">
                 <Button type="submit" disabled={submitting} className="h-11">
                   {submitting ? (
-                    "Cargando..."
+                    <LoaderCircle className="size-5 animate-spin" />
                   ) : (
                     <>
                       {isRegister ? "Crear cuenta" : "Iniciar sesión"}
@@ -284,8 +284,8 @@ export default function AuthPage() {
                   )}
                 </Button>
 
-                <div className="flex items-center gap-3 text-xs text-gray-400">
-                  <div className="flex-1 h-px bg-gray-200" />
+                <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                  <div className="flex-1 h-px bg-border" />
                   <span>Acceso alternativo</span>
                   <div className="flex-1 h-px bg-gray-200" />
                 </div>

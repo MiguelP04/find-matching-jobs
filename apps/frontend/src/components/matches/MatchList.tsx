@@ -7,9 +7,35 @@ import { MatchResult } from '../../types/job';
 import { ApiError } from '../../lib/api';
 import { MatchCard } from './MatchCard';
 import { MatchCardSkeleton } from './MatchCardSkeleton';
+import { UserRoundX } from 'lucide-react';
 import { Button } from '../ui/button';
 
 const PAGE_SIZE = 10;
+
+function MatchStatsBar({ matches, total }: { matches: MatchResult[]; total: number }) {
+  if (matches.length === 0) return null;
+  const avgScore = Math.round(matches.reduce((sum, m) => sum + m.score, 0) / matches.length);
+  const bestScore = Math.max(...matches.map((m) => m.score));
+
+  return (
+    <div className="flex items-center gap-4 px-4 py-3 rounded-xl bg-card border border-border shadow-sm">
+      <div className="flex items-center gap-2 text-sm">
+        <span className="text-muted-foreground">Total</span>
+        <span className="font-semibold text-foreground">{total}</span>
+      </div>
+      <div className="w-px h-6 bg-border" />
+      <div className="flex items-center gap-2 text-sm">
+        <span className="text-muted-foreground">Puntaje promedio</span>
+        <span className="font-semibold text-foreground">{avgScore}</span>
+      </div>
+      <div className="w-px h-6 bg-border" />
+      <div className="flex items-center gap-2 text-sm">
+        <span className="text-muted-foreground">Mejor coincidencia</span>
+        <span className="font-semibold text-green-600">{bestScore}</span>
+      </div>
+    </div>
+  );
+}
 
 export const MatchList = () => {
   const searchParams = useSearchParams();
@@ -72,14 +98,14 @@ export const MatchList = () => {
   if (noProfile) {
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-        <div className="bg-white rounded-xl shadow-2xl p-8 max-w-md mx-4 text-center">
-          <div className="text-5xl mb-4">👤</div>
-          <h2 className="text-xl font-bold text-gray-800 mb-2">
+        <div className="bg-card rounded-xl shadow-2xl p-8 max-w-md mx-4 text-center">
+          <UserRoundX className="size-12 text-muted-foreground mx-auto mb-4" />
+          <h2 className="text-xl font-bold text-foreground mb-2">
             Perfil no encontrado
           </h2>
-          <p className="text-gray-600 mb-6">
+          <p className="text-muted-foreground mb-6">
             Necesitas crear un perfil antes de poder ver las vacantes disponibles.
-            Agrega tus datos, skills y preferencias para obtener matches personalizados.
+            Agrega tus datos, skills y preferencias para obtener recomendaciones personalizadas.
           </p>
           <div className="flex gap-3 justify-center">
             <Button onClick={() => router.push('/perfil')}>
@@ -108,27 +134,31 @@ export const MatchList = () => {
   }
 
   return (
-    <div className="flex flex-col gap-4 relative">
+    <div className="flex flex-col gap-3 relative">
       {loading && matches.length > 0 && (
-        <div className="absolute inset-0 bg-white/60 flex items-center justify-center z-10 rounded-lg">
-          <div className="size-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
+        <div className="absolute inset-0 bg-background/60 flex items-center justify-center z-10 rounded-lg">
+          <div className="size-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
         </div>
       )}
+      <MatchStatsBar matches={matches} total={total} />
+
       <div className="flex justify-end">
-        <Button onClick={handleRefresh} disabled={refreshing}>
-          {refreshing ? 'Actualizando...' : 'Actualizar matches'}
+        <Button variant="outline" size="sm" onClick={handleRefresh} disabled={refreshing}>
+          {refreshing ? 'Actualizando...' : 'Actualizar recomendaciones'}
         </Button>
       </div>
 
       {matches.length === 0 ? (
-        <div className="text-center py-8">
-          <p className="text-gray-500">No se encontraron matches.</p>
-          <p className="text-sm text-gray-400 mt-1">
+        <div className="text-center py-12">
+          <p className="text-sm text-muted-foreground">No se encontraron recomendaciones.</p>
+          <p className="text-xs text-muted-foreground mt-1">
             Crea un perfil y agrega tus skills para obtener recomendaciones.
           </p>
         </div>
       ) : (
-        matches.map((match) => <MatchCard key={match.id} match={match} />)
+        <div className="flex flex-col gap-3">
+          {matches.map((match) => <MatchCard key={match.id} match={match} />)}
+        </div>
       )}
 
       {totalPages > 1 && (
@@ -143,7 +173,7 @@ export const MatchList = () => {
           >
             Anterior
           </Button>
-          <span className="text-sm text-gray-500">
+          <span className="text-xs text-muted-foreground">
             Página {page} de {totalPages}
           </span>
           <Button
