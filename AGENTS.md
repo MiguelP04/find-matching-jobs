@@ -53,3 +53,5 @@ This monorepo uses **pnpm** with workspaces. All commands should use `pnpm` inst
 - **NEVER** commit changes without explicit user permission
 - **NEVER** push to remote without explicit user permission
 - Only commit or push when the user explicitly requests it
+- PRs **must** target `development`, never `main`
+- Branches follow the pattern: `feature/<name>`, `fix/<name>`, `chore/<name>`
