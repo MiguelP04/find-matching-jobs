@@ -238,7 +238,7 @@ export default function ProfileEditPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50/50 p-6 md:p-10">
+    <div className="min-h-screen bg-muted/50 p-6 md:p-10">
       <div className="max-w-4xl mx-auto flex flex-col gap-6">
         <ProfileHeader
           isSubmitting={isSubmitting}
@@ -246,7 +246,7 @@ export default function ProfileEditPage() {
         />
 
         {globalError && (
-          <div className="p-4 bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg shadow-xs">
+          <div className="p-4 bg-destructive/10 border border-destructive/20 text-destructive text-sm rounded-lg shadow-xs">
             {globalError}
           </div>
         )}
@@ -269,20 +269,20 @@ export default function ProfileEditPage() {
             onAddSkill={handleAddSkill}
           />
 
-          <div className="flex justify-end gap-4 border-t border-gray-200 pt-6">
+          <div className="flex justify-end gap-4 border-t border-border pt-6">
             <button
               type="button"
               onClick={() => {
                 if (confirm("¿Descartar cambios no guardados?")) reset();
               }}
-              className="inline-flex items-center justify-center rounded-lg border border-gray-300 bg-white hover:bg-gray-50 text-gray-700 h-11 px-6 text-sm font-medium transition-colors"
+              className="inline-flex items-center justify-center rounded-lg border border-border bg-background hover:bg-muted text-foreground h-11 px-6 text-sm font-medium transition-colors"
             >
               Descartar
             </button>
             <button
               type="submit"
               disabled={isSubmitting}
-              className="inline-flex items-center justify-center rounded-lg bg-amber-500 hover:bg-amber-600 text-gray-900 font-bold h-11 px-8 text-sm shadow-sm transition-colors disabled:opacity-50"
+              className="inline-flex items-center justify-center rounded-lg bg-primary text-primary-foreground font-bold h-11 px-8 text-sm shadow-sm transition-colors disabled:opacity-50"
             >
               {isSubmitting ? "Sincronizando..." : "GUARDAR PERFIL"}
             </button>

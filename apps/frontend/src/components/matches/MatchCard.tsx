@@ -1,4 +1,5 @@
 import { MatchResult } from '../../types/job';
+import { Sparkles, ArrowUpRight, Building2, MapPin, Calendar } from 'lucide-react';
 
 const getScoreColor = (score: number) => {
   if (score >= 80) return 'bg-green-500';
@@ -6,74 +7,105 @@ const getScoreColor = (score: number) => {
   return 'bg-red-500';
 };
 
-const getScoreTextColor = (score: number) => {
-  if (score >= 80) return 'text-green-700';
-  if (score >= 60) return 'text-yellow-700';
-  return 'text-red-700';
+const getScoreAccent = (score: number) => {
+  if (score >= 80) return 'bg-green-500';
+  if (score >= 60) return 'bg-yellow-500';
+  return 'bg-red-500';
+};
+
+const getScoreBg = (score: number) => {
+  if (score >= 80) return 'bg-green-50 text-green-700 border-green-200';
+  if (score >= 60) return 'bg-yellow-50 text-yellow-700 border-yellow-200';
+  return 'bg-red-50 text-red-700 border-red-200';
 };
 
 export const MatchCard = ({ match }: { match: MatchResult }) => {
   const { job, score, justificacion_ia, missing_skills, fecha_analisis } = match;
 
   return (
-    <div className="p-4 border rounded-lg shadow-sm hover:shadow-md transition-shadow">
-      <div className="flex items-start justify-between">
-        <div className="flex-1">
-          <h3 className="text-lg font-semibold">{job.titulo}</h3>
-          <p className="text-gray-600">{job.empresa}</p>
-          <div className="flex gap-2 text-sm text-gray-500 mt-2">
-            <span>{job.ubicacion}</span>
+    <div className="relative flex gap-4 p-5 rounded-xl border border-border bg-card shadow-sm hover:shadow-md transition-shadow">
+      <div className={`w-[4px] shrink-0 rounded-full ${getScoreAccent(score)}`} />
+
+      <div className="flex-1 min-w-0">
+        <div className="flex items-start justify-between gap-4">
+          <div className="min-w-0">
+            <h3 className="text-base font-semibold text-foreground truncate">
+              {job.titulo}
+            </h3>
+            <div className="flex items-center gap-1.5 text-sm text-muted-foreground mt-0.5">
+              <Building2 className="size-3.5 shrink-0" />
+              <span>{job.empresa}</span>
+              {job.ubicacion && (
+                <>
+                  <span className="text-border">|</span>
+                  <MapPin className="size-3.5 shrink-0" />
+                  <span>{job.ubicacion}</span>
+                </>
+              )}
+            </div>
           </div>
-          <p className="text-xs text-gray-400 mt-2">
-            Publicado el: {new Date(job.fecha_publicacion).toLocaleDateString('es-ES')}
-          </p>
-          <p className="text-xs text-gray-400 mt-1">
-            Analizado el: {new Date(fecha_analisis).toLocaleDateString('es-ES', { hour: '2-digit', minute: '2-digit' })}
-          </p>
+
+          <div className="flex flex-col items-center shrink-0">
+            <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-xs font-semibold ${getScoreBg(score)}`}>
+              <span>{score}</span>
+              <span className="font-normal">puntos</span>
+            </div>
+          </div>
         </div>
-        <div className="flex flex-col items-center ml-4">
-          <div
-            className={`w-14 h-14 rounded-full ${getScoreColor(score)} flex items-center justify-center text-white font-bold text-lg`}
-          >
-            {score}
-          </div>
-          <span className={`text-xs font-semibold mt-1 ${getScoreTextColor(score)}`}>
-            Match
+
+        <div className="flex items-center gap-3 text-xs text-muted-foreground mt-3">
+          <span className="flex items-center gap-1">
+            <Calendar className="size-3.5 shrink-0" />
+            Publicado: {new Date(job.fecha_publicacion).toLocaleDateString('es-ES')}
+          </span>
+          <span className="text-border">|</span>
+          <span className="flex items-center gap-1">
+            <Calendar className="size-3.5 shrink-0" />
+            Analizado: {new Date(fecha_analisis).toLocaleDateString('es-ES', { hour: '2-digit', minute: '2-digit' })}
           </span>
         </div>
-      </div>
 
-      {justificacion_ia && (
-        <div className="mt-3 p-3 bg-blue-50 border border-blue-100 rounded-md">
-          <p className="text-sm text-blue-800">{justificacion_ia}</p>
-        </div>
-      )}
-
-      {missing_skills && missing_skills.length > 0 && (
-        <div className="mt-2">
-          <span className="text-xs text-gray-500">Skills faltantes: </span>
-          <div className="flex flex-wrap gap-1 mt-1">
-            {missing_skills.map((skill) => (
-              <span
-                key={skill}
-                className="px-2 py-0.5 bg-red-100 text-red-700 text-xs rounded-full"
-              >
-                {skill}
-              </span>
-            ))}
+        {justificacion_ia && (
+          <div className="mt-3 p-3 rounded-lg bg-muted border border-border">
+            <div className="flex items-start gap-2">
+              <Sparkles className="size-4 text-primary shrink-0 mt-0.5" />
+              <p className="text-sm text-foreground leading-relaxed">{justificacion_ia}</p>
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
-      <div className="mt-3 flex justify-end">
-        <a
-          href={job.url_postulacion}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-sm text-blue-600 hover:text-blue-800 font-medium hover:underline"
-        >
-          Ver detalle de la vacante →
-        </a>
+        {missing_skills && missing_skills.length > 0 && (
+          <div className="mt-3">
+            <div className="flex flex-wrap gap-1.5">
+              {missing_skills.map((skill) => (
+                <span
+                  key={skill}
+                  className="px-2 py-0.5 bg-destructive/10 text-destructive text-[11px] font-medium rounded-full"
+                >
+                  {skill}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div className="mt-3 flex items-center gap-3">
+          <a
+            href={job.url_postulacion}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+          >
+            Postularme <ArrowUpRight className="size-3" />
+          </a>
+          <span className="text-border">|</span>
+          <a
+            href={`/jobs/${job.id}`}
+            className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+          >
+            Ver vacante
+          </a>
+        </div>
       </div>
     </div>
   );

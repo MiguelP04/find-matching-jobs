@@ -7,10 +7,10 @@ export default function WelcomeHeader() {
 
   return (
     <div className="mb-6">
-      <h1 className="text-2xl font-bold text-gray-900">
+      <h1 className="text-2xl font-bold text-foreground">
         ¡Bienvenido de vuelta, {user?.nombre} {user?.apellido}!
       </h1>
-      <p className="text-sm text-gray-500 capitalize">
+      <p className="text-sm text-muted-foreground capitalize">
         {user?.rol} · {user?.email}
       </p>
     </div>

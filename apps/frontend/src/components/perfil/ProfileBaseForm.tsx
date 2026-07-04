@@ -1,7 +1,7 @@
 "use client";
 
 import { UseFormRegister } from "react-hook-form";
-import { Briefcase, GraduationCap, Globe } from "lucide-react";
+import { Briefcase, GraduationCap, Globe, Link as LinkIcon } from "lucide-react";
 import { Input } from "@/components/ui/input";
 
 interface SkillFormValue {
@@ -26,42 +26,31 @@ interface ProfileBaseFormProps {
 
 export function ProfileBaseForm({ register }: ProfileBaseFormProps) {
   return (
-    <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-xs flex flex-col gap-5">
-      <div className="flex items-center gap-2 text-gray-900 font-semibold border-b border-gray-100 pb-3">
-        <Briefcase className="size-5 text-gray-500" />
+    <div className="bg-card border border-border rounded-xl p-6 shadow-xs flex flex-col gap-5">
+      <div className="flex items-center gap-2 text-foreground font-semibold border-b border-border pb-3">
+        <Briefcase className="size-5 text-muted-foreground" />
         <h2>Perfil Profesional </h2>
       </div>
 
       <div className="flex flex-col gap-2">
-        <label className="text-sm font-medium text-gray-700">
+        <label className="text-sm font-medium text-foreground">
           Resumen Profesional
         </label>
         <textarea
           {...register("bio")}
           rows={4}
           placeholder="Escribe un resumen sobre tus proyectos, enfoque técnico y metas académicas..."
-          className="w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm outline-hidden focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 placeholder:text-gray-400"
+          className="w-full rounded-lg border border-input bg-transparent px-3 py-2 text-sm outline-hidden focus:border-ring focus:ring-2 focus:ring-ring/20 placeholder:text-muted-foreground"
         />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="flex flex-col gap-2">
-          <label className="text-sm font-medium text-gray-700">
+          <label className="text-sm font-medium text-foreground">
             GitHub URL
           </label>
           <div className="relative">
-            <svg
-              className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-gray-400"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4" />
-              <path d="M9 18c-4.51 2-5-2-7-2" />
-            </svg>
+            <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
             <Input
               type="url"
               placeholder="https://github.com/usuario"
@@ -72,23 +61,11 @@ export function ProfileBaseForm({ register }: ProfileBaseFormProps) {
         </div>
 
         <div className="flex flex-col gap-2">
-          <label className="text-sm font-medium text-gray-700">
+          <label className="text-sm font-medium text-foreground">
             LinkedIn URL
           </label>
           <div className="relative">
-            <svg
-              className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-gray-400"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z" />
-              <rect width="4" height="12" x="2" y="9" />
-              <circle cx="4" cy="4" r="2" />
-            </svg>
+            <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
             <Input
               type="url"
               placeholder="https://linkedin.com/in/usuario"
@@ -101,14 +78,14 @@ export function ProfileBaseForm({ register }: ProfileBaseFormProps) {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="flex flex-col gap-2">
-          <label className="text-sm font-medium text-gray-700">
+          <label className="text-sm font-medium text-foreground">
             Semestre Actual
           </label>
           <div className="relative">
-            <GraduationCap className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-gray-400" />
+            <GraduationCap className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
             <select
               {...register("semestre")}
-              className="w-full h-10 rounded-lg border border-gray-300 bg-white pl-9 pr-3 text-sm outline-hidden focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20"
+              className="w-full h-10 rounded-lg border border-input bg-background pl-9 pr-3 text-sm outline-hidden focus:border-ring focus:ring-2 focus:ring-ring/20"
             >
               <option value="">Selecciona tu semestre</option>
               {[...Array(9)].map((_, i) => (
@@ -122,14 +99,14 @@ export function ProfileBaseForm({ register }: ProfileBaseFormProps) {
         </div>
 
         <div className="flex flex-col gap-2">
-          <label className="text-sm font-medium text-gray-700">
+          <label className="text-sm font-medium text-foreground">
             Modalidad Preferida
           </label>
           <div className="relative">
-            <Globe className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-gray-400" />
+            <Globe className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
             <select
               {...register("modalidad")}
-              className="w-full h-10 rounded-lg border border-gray-300 bg-white pl-9 pr-3 text-sm outline-hidden focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20"
+              className="w-full h-10 rounded-lg border border-input bg-background pl-9 pr-3 text-sm outline-hidden focus:border-ring focus:ring-2 focus:ring-ring/20"
             >
               <option value="">Selecciona una modalidad</option>
               <option value="REMOTO">Remoto</option>
