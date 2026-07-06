@@ -2,12 +2,12 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { getMatches, refreshMatches } from '../../services/matchService';
+import { getMatches } from '../../services/matchService';
 import { MatchResult } from '../../types/job';
 import { ApiError } from '../../lib/api';
 import { MatchCard } from './MatchCard';
 import { MatchCardSkeleton } from './MatchCardSkeleton';
-import { UserRoundX } from 'lucide-react';
+import { UserRoundX, Clock } from 'lucide-react';
 import { Button } from '../ui/button';
 
 const PAGE_SIZE = 10;
@@ -37,13 +37,22 @@ function MatchStatsBar({ matches, total }: { matches: MatchResult[]; total: numb
   );
 }
 
+function formatTimeAgo(dateStr: string): string {
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return 'hace unos segundos';
+  if (mins < 60) return `hace ${mins} min`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `hace ${hours}h`;
+  return `hace ${Math.floor(hours / 24)}d`;
+}
+
 export const MatchList = () => {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [matches, setMatches] = useState<MatchResult[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [noProfile, setNoProfile] = useState(false);
 
@@ -77,21 +86,11 @@ export const MatchList = () => {
     fetchMatches();
   }, [fetchMatches]);
 
-  const handleRefresh = async () => {
-    setRefreshing(true);
-    try {
-      await refreshMatches();
-      await fetchMatches();
-    } catch (e) {
-      if (e instanceof ApiError && e.status === 404) {
-        setNoProfile(true);
-      } else {
-        setError((e as Error).message);
-      }
-    } finally {
-      setRefreshing(false);
-    }
-  };
+  const lastUpdated = matches.length > 0
+    ? matches.reduce((latest, m) =>
+        new Date(m.fecha_analisis) > new Date(latest) ? m.fecha_analisis : latest,
+      matches[0].fecha_analisis)
+    : null;
 
   const totalPages = Math.ceil(total / PAGE_SIZE) || 1;
 
@@ -142,11 +141,12 @@ export const MatchList = () => {
       )}
       <MatchStatsBar matches={matches} total={total} />
 
-      <div className="flex justify-end">
-        <Button variant="outline" size="sm" onClick={handleRefresh} disabled={refreshing}>
-          {refreshing ? 'Actualizando...' : 'Actualizar recomendaciones'}
-        </Button>
-      </div>
+      {lastUpdated && (
+        <div className="flex items-center justify-end gap-1.5 text-xs text-muted-foreground">
+          <Clock className="size-3.5" />
+          <span>Última actualización: {formatTimeAgo(lastUpdated)}</span>
+        </div>
+      )}
 
       {matches.length === 0 ? (
         <div className="text-center py-12">

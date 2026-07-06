@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { MatchResult } from '../../types/job';
 import { Sparkles, ArrowUpRight, Building2, MapPin, Calendar } from 'lucide-react';
 
@@ -99,12 +100,12 @@ export const MatchCard = ({ match }: { match: MatchResult }) => {
             Postularme <ArrowUpRight className="size-3" />
           </a>
           <span className="text-border">|</span>
-          <a
+          <Link
             href={`/jobs/${job.id}`}
             className="text-xs text-muted-foreground hover:text-foreground transition-colors"
           >
             Ver vacante
-          </a>
+          </Link>
         </div>
       </div>
     </div>

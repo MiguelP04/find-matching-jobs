@@ -70,7 +70,7 @@ export function SkillsForm({
           type="button"
           onClick={onAddSkill}
           disabled={catalogSkills.length === 0 || !selectedCatalogSkillId}
-          className="inline-flex items-center justify-center rounded-lg bg-secondary text-secondary-foreground gap-2 h-10 px-4 text-sm font-medium transition-colors hover:bg-secondary/80 disabled:opacity-40 disabled:cursor-not-allowed"
+          className="inline-flex items-center justify-center rounded-lg bg-primary text-primary-foreground gap-2 h-10 px-4 text-sm font-medium transition-colors hover:bg-primary/80 disabled:opacity-40 disabled:cursor-not-allowed"
         >
           <Plus className="size-4" /> Agregar Skill
         </button>
