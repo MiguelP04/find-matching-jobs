@@ -8,12 +8,14 @@ import { JobsController } from './jobs.controller';
 import { JsearchModule } from '../jsearch/jsearch.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { JobsCronService } from './jobs-cron.service';
+import { MatchingModule } from '../matching/matching.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Job, MatchResult, Profile]),
     ScheduleModule.forRoot(),
     JsearchModule,
+    MatchingModule,
   ],
   exports: [TypeOrmModule, JobsService],
   controllers: [JobsController],

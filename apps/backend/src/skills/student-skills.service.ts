@@ -3,12 +3,14 @@ import {
   NotFoundException,
   ConflictException,
   ForbiddenException,
+  Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { StudentSkill } from './entities/student-skill.entity';
 import { Skill } from './entities/skill.entity';
 import { ProfilesService } from '../profiles/profiles.service';
+import { MatchingService } from '../matching/matching.service';
 import {
   CreateStudentSkillDto,
   UpdateStudentSkillDto,
@@ -16,12 +18,15 @@ import {
 
 @Injectable()
 export class StudentSkillsService {
+  private readonly logger = new Logger(StudentSkillsService.name);
+
   constructor(
     @InjectRepository(StudentSkill)
     private readonly studentSkillsRepository: Repository<StudentSkill>,
     @InjectRepository(Skill)
     private readonly skillsRepository: Repository<Skill>,
     private readonly profilesService: ProfilesService,
+    private readonly matchingService: MatchingService,
   ) {}
 
   async addSkill(userId: number, createDto: CreateStudentSkillDto) {
@@ -48,7 +53,17 @@ export class StudentSkillsService {
       nivel: createDto.nivel,
     });
 
-    return this.studentSkillsRepository.save(newStudentSkill);
+    const saved = await this.studentSkillsRepository.save(newStudentSkill);
+
+    this.matchingService
+      .matchStudentToAllJobs(userId, { useAI: true })
+      .catch((err: Error) =>
+        this.logger.error(
+          `Background matching error after addSkill: ${err.message}`,
+        ),
+      );
+
+    return saved;
   }
 
   async getMySkills(userId: number) {
@@ -81,7 +96,17 @@ export class StudentSkillsService {
     }
 
     studentSkill.nivel = updateDto.nivel;
-    return this.studentSkillsRepository.save(studentSkill);
+    const saved = await this.studentSkillsRepository.save(studentSkill);
+
+    this.matchingService
+      .matchStudentToAllJobs(userId, { useAI: true })
+      .catch((err: Error) =>
+        this.logger.error(
+          `Background matching error after updateSkill: ${err.message}`,
+        ),
+      );
+
+    return saved;
   }
 
   async removeSkill(userId: number, id: number) {
@@ -101,6 +126,21 @@ export class StudentSkillsService {
     }
 
     await this.studentSkillsRepository.delete(id);
+
+    const remaining = await this.studentSkillsRepository.count({
+      where: { student_id: profile.id },
+    });
+
+    if (remaining > 0) {
+      this.matchingService
+        .matchStudentToAllJobs(userId, { useAI: true })
+        .catch((err: Error) =>
+          this.logger.error(
+            `Background matching error after removeSkill: ${err.message}`,
+          ),
+        );
+    }
+
     return { message: 'Skill removed successfully' };
   }
 }

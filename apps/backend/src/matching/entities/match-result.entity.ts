@@ -1,8 +1,9 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, Index, JoinColumn } from 'typeorm'
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, Index, JoinColumn, Unique } from 'typeorm'
 import { Profile } from '../../profiles/entities/profile.entity'
 import { Job } from '../../jobs/entities/job.entity'
 
 @Entity('match_results')
+@Unique(['student_id', 'job_id'])
 export class MatchResult {
   @PrimaryGeneratedColumn()
   id: number
