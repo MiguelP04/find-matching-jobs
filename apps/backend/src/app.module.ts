@@ -12,6 +12,7 @@ import { JobsModule } from './jobs/jobs.module';
 import { JsearchModule } from './jsearch/jsearch.module';
 import { MatchingModule } from './matching/matching.module';
 import { AuthModule } from './auth/auth.module';
+import { AdminModule } from './admin/admin.module';
 
 @Module({
   imports: [
@@ -38,6 +39,7 @@ import { AuthModule } from './auth/auth.module';
     JobsModule,
     JsearchModule,
     MatchingModule,
+    AdminModule,
   ],
   controllers: [AppController],
   providers: [
