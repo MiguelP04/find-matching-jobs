@@ -22,8 +22,9 @@ export const getMatches = async (params: GetMatchesParams): Promise<{ data: Matc
   return { data: res.data, total: res.total };
 };
 
-export const refreshMatches = async (useAI = false): Promise<void> => {
+export const matchWithJob = async (jobId: number, useAI = true): Promise<MatchResult> => {
   const token = useAuthStore.getState().accessToken;
   const qs = useAI ? '?useAI=true' : '';
-  await api.post(`/matches/refresh${qs}`, undefined, token ?? undefined);
+  const res = await api.post<MatchResult>(`/matches/job/${jobId}${qs}`, undefined, token ?? undefined);
+  return res as MatchResult;
 };

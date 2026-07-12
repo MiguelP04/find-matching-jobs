@@ -1,4 +1,13 @@
-import { Controller, Get, Post, Param, Query, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Param,
+  Query,
+  UseGuards,
+  Logger,
+  HttpCode,
+} from '@nestjs/common';
 import { ApiOperation, ApiQuery, ApiParam, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
@@ -10,6 +19,8 @@ import { MatchesQueryDto } from './dto/matches-query.dto';
 @Controller('matches')
 @UseGuards(JwtAuthGuard)
 export class MatchesController {
+  private readonly logger = new Logger(MatchesController.name);
+
   constructor(private readonly matchingService: MatchingService) {}
 
   @Get('me')
@@ -53,9 +64,10 @@ export class MatchesController {
   }
 
   @Post('refresh')
+  @HttpCode(202)
   @ApiOperation({
     summary:
-      'Re-ejecutar matching para el estudiante actual vs todas las vacantes activas',
+      'Re-ejecutar matching para el estudiante actual vs todas las vacantes activas (asíncrono)',
   })
   @ApiQuery({
     name: 'useAI',
@@ -63,19 +75,19 @@ export class MatchesController {
     type: String,
     description: 'Usar IA para justificación',
   })
-  async refreshMatches(
+  refreshMatches(
     @CurrentUser() user: JwtPayload,
     @Query('useAI') useAI?: string,
   ) {
     const shouldIgnoreAI = useAI !== 'true';
-    const results = await this.matchingService.matchStudentToAllJobs(
-      user.userId,
-      { useAI: !shouldIgnoreAI },
-    );
+    this.matchingService
+      .matchStudentToAllJobs(user.userId, { useAI: !shouldIgnoreAI })
+      .catch((err: Error) =>
+        this.logger.error(`Background matching error: ${err.message}`),
+      );
     return {
-      message: 'Matching completado con éxito',
-      count: results.length,
-      results,
+      statusCode: 202,
+      message: 'Recalculando recomendaciones en segundo plano...',
     };
   }
 

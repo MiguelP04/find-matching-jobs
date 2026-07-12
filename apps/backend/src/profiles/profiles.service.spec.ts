@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { ProfilesService } from './profiles.service';
 import { Profile } from './entities/profile.entity';
 import { ConflictException, NotFoundException } from '@nestjs/common';
+import { MatchingService } from '../matching/matching.service';
 import { Modalidad } from '@find-matching-jobs/types';
 
 const mockProfile: Profile = {
@@ -37,6 +38,12 @@ describe('ProfilesService', () => {
             create: jest.fn().mockReturnValue(mockProfile),
             save: jest.fn().mockResolvedValue(mockProfile),
             findOne: findOneMock,
+          },
+        },
+        {
+          provide: MatchingService,
+          useValue: {
+            matchStudentToAllJobs: jest.fn().mockResolvedValue([]),
           },
         },
       ],

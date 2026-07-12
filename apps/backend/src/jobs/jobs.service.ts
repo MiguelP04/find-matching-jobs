@@ -92,9 +92,10 @@ export class JobsService {
 
   async saveJobs(
     jobs: JobData[],
-  ): Promise<{ inserted: number; skipped: number }> {
+  ): Promise<{ inserted: number; skipped: number; insertedIds: number[] }> {
     const externalIds = jobs.map((j) => j.external_id).filter(Boolean);
-    if (externalIds.length === 0) return { inserted: 0, skipped: 0 };
+    if (externalIds.length === 0)
+      return { inserted: 0, skipped: 0, insertedIds: [] };
 
     const existing = await this.jobsRepository.find({
       where: { external_id: In(externalIds) },
@@ -104,10 +105,12 @@ export class JobsService {
 
     const newJobs = jobs.filter((j) => !existingSet.has(j.external_id));
 
+    let insertedIds: number[] = [];
     if (newJobs.length > 0) {
-      await this.jobsRepository.save(newJobs);
+      const saved = await this.jobsRepository.save(newJobs);
+      insertedIds = saved.map((j) => j.id);
     }
 
-    return { inserted: newJobs.length, skipped: existingSet.size };
+    return { inserted: newJobs.length, skipped: existingSet.size, insertedIds };
   }
 }

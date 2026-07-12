@@ -1,6 +1,8 @@
+import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Building2, MapPin, Calendar } from "lucide-react";
-import type { JobDetailResponse } from "@/types/job";
+import { Building2, MapPin, Calendar, Sparkles, Loader2 } from "lucide-react";
+import type { JobDetailResponse, MatchResult } from "@/types/job";
+import { matchWithJob } from "@/services/matchService";
 
 const getScoreColor = (score: number) => {
   if (score >= 80) return "bg-green-500";
@@ -17,6 +19,22 @@ const getScoreTextColor = (score: number) => {
 export const JobDetail = ({ job }: { job: JobDetailResponse }) => {
   const router = useRouter();
   const { match } = job;
+  const [localMatch, setLocalMatch] = useState<MatchResult | null>(null);
+  const [calculating, setCalculating] = useState(false);
+
+  const activeMatch = match ?? localMatch;
+
+  const handleCalculate = async () => {
+    setCalculating(true);
+    try {
+      const result = await matchWithJob(job.id, true);
+      setLocalMatch(result);
+    } catch {
+      // Error se maneja silenciosamente, el botón sigue disponible
+    } finally {
+      setCalculating(false);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -56,14 +74,14 @@ export const JobDetail = ({ job }: { job: JobDetailResponse }) => {
           </div>
         </div>
 
-        {match && (
+        {activeMatch && (
           <div className="flex flex-col items-center ml-6">
             <div
-              className={`w-16 h-16 rounded-full ${getScoreColor(match.score)} flex items-center justify-center text-white font-bold text-xl`}
+              className={`w-16 h-16 rounded-full ${getScoreColor(activeMatch.score)} flex items-center justify-center text-white font-bold text-xl`}
             >
-              {match.score}
+              {activeMatch.score}
             </div>
-            <span className={`text-xs font-semibold mt-1 ${getScoreTextColor(match.score)}`}>
+            <span className={`text-xs font-semibold mt-1 ${getScoreTextColor(activeMatch.score)}`}>
               Coincidencia
             </span>
           </div>
@@ -89,15 +107,37 @@ export const JobDetail = ({ job }: { job: JobDetailResponse }) => {
       </div>
 
       {/* Match section */}
-      {match && match.justificacion_ia && (
+      {!activeMatch && !calculating && (
+        <div className="p-6 bg-muted border border-border rounded-lg text-center">
+          <p className="text-sm text-muted-foreground mb-4">
+            Aún no hay un cálculo de compatibilidad para esta vacante.
+          </p>
+          <button
+            onClick={handleCalculate}
+            className="inline-flex items-center gap-2 rounded-lg bg-primary text-primary-foreground font-semibold h-11 px-6 text-sm shadow-sm transition-colors hover:bg-primary/80"
+          >
+            <Sparkles className="size-4" />
+            Calcular mi compatibilidad
+          </button>
+        </div>
+      )}
+
+      {calculating && (
+        <div className="p-6 bg-muted border border-border rounded-lg text-center">
+          <Loader2 className="size-6 animate-spin text-primary mx-auto mb-2" />
+          <p className="text-sm text-muted-foreground">Calculando compatibilidad...</p>
+        </div>
+      )}
+
+      {activeMatch && activeMatch.justificacion_ia && (
         <div className="p-4 bg-blue-50 border border-blue-100 rounded-lg">
           <h3 className="text-sm font-semibold text-blue-900 mb-2">Justificación</h3>
-          <p className="text-sm text-blue-800 leading-relaxed">{match.justificacion_ia}</p>
-          {match.missing_skills && match.missing_skills.length > 0 && (
+          <p className="text-sm text-blue-800 leading-relaxed">{activeMatch.justificacion_ia}</p>
+          {activeMatch.missing_skills && activeMatch.missing_skills.length > 0 && (
             <div className="mt-3">
               <span className="text-xs font-medium text-blue-900">Skills faltantes: </span>
               <div className="flex flex-wrap gap-1.5 mt-1">
-                {match.missing_skills.map((skill) => (
+                {activeMatch.missing_skills.map((skill) => (
                   <span
                     key={skill}
                     className="px-2 py-0.5 bg-red-100 text-red-700 text-xs rounded-full"

@@ -1,10 +1,6 @@
-/////////////////////////////////////////////////////////////////////////
-// Imports
-/////////////////////////////////////////////////////////////////////////
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, MoreThanOrEqual } from 'typeorm';
-import { ConfigService } from '@nestjs/config';
+import { Repository, MoreThanOrEqual, In } from 'typeorm';
 import { subDays } from 'date-fns';
 import axios from 'axios';
 import { MatchResult } from './entities/match-result.entity';
@@ -19,27 +15,21 @@ import { Modalidad } from '@find-matching-jobs/types';
 import { MatchingOptions } from './interfaces/matching-options.interface';
 import { MatchesQueryDto } from './dto/matches-query.dto';
 
-/////////////////////////////////////////////////////////////////////////
-// Servicio principal de Matching
-// - Compara perfil del estudiante vs vacantes
-// - Calcula score numérico (0-100)
-// - Genera justificación (Opción A: Gemini API | Opción B: Reglas)
-// - Persiste resultados en Match_Results vía UPSERT
-/////////////////////////////////////////////////////////////////////////
 @Injectable()
 export class MatchingService {
   private readonly logger = new Logger(MatchingService.name);
 
-  // Mapeo de niveles a valores numéricos para el cálculo de score
   private readonly NIVEL_VALUES: Record<NivelSkill, number> = {
     [NivelSkill.BASICO]: 1,
     [NivelSkill.INTERMEDIO]: 2,
     [NivelSkill.AVANZADO]: 3,
   };
 
-  /////////////////////////////////////////////////////////////////////////
-  // Constructor: inyecta repositorios y servicios
-  /////////////////////////////////////////////////////////////////////////
+  private readonly BATCH_SIZE = 10;
+  private readonly SKILLS_CACHE_TTL = 5 * 60 * 1000;
+
+  private skillsCache: { data: Skill[]; timestamp: number } | null = null;
+
   constructor(
     @InjectRepository(MatchResult)
     private readonly matchResultRepo: Repository<MatchResult>,
@@ -49,24 +39,8 @@ export class MatchingService {
     private readonly jobRepo: Repository<Job>,
     @InjectRepository(Skill)
     private readonly skillRepo: Repository<Skill>,
-    @InjectRepository(StudentSkill)
-    private readonly configService: ConfigService,
   ) {}
 
-  /////////////////////////////////////////////////////////////////////////
-  // Métodos públicos
-  /////////////////////////////////////////////////////////////////////////
-
-  /////////////////////////////////////////////////////////////////////////
-  // matchStudentToJob: Matching individual (userId vs vacante)
-  // 1. Resuelve userId → profile.id
-  // 2. Carga perfil con skills del estudiante + vacante
-  // 3. Extrae skills requeridas desde la descripción de la vacante
-  // 4. Compara skills: genera matchedSkills[] y missingSkills[]
-  // 5. Calcula score numérico (0-100)
-  // 6. Genera justificación (según options.useAI)
-  // 7. Persiste vía UPSERT en match_results
-  /////////////////////////////////////////////////////////////////////////
   async matchStudentToJob(
     userId: number,
     jobId: number,
@@ -79,109 +53,193 @@ export class MatchingService {
       throw new NotFoundException(`Vacante ${jobId} no encontrada`);
     }
 
-    const allSkills = await this.skillRepo.find();
+    const allSkills = await this.getAllSkillsCached();
 
-    const requiredSkills = this.extractSkillsFromText(
-      `${job.titulo} ${job.descripcion} ${job.ubicacion}`,
-      allSkills,
-    );
+    const { score, matchedSkills, missingSkills, justification } =
+      this.matchStudentToJobInternal(profile, job, allSkills);
 
-    const studentSkillMap = new Map<string, StudentSkill>();
-    for (const ss of profile.studentSkills) {
-      studentSkillMap.set(ss.skill.nombre.toLowerCase(), ss);
-    }
+    let finalJustification = justification;
 
-    const matchedSkills: string[] = [];
-    const missingSkills: string[] = [];
-
-    for (const skill of requiredSkills) {
-      if (studentSkillMap.has(skill.nombre.toLowerCase())) {
-        matchedSkills.push(skill.nombre);
-      } else {
-        missingSkills.push(skill.nombre);
-      }
-    }
-
-    const score = this.calculateScore(
-      profile,
-      job,
-      matchedSkills,
-      requiredSkills,
-      studentSkillMap,
-    );
-
-    const useAI = options?.useAI ?? false;
-    let justification: string;
-
-    if (useAI) {
-      justification = await this.generateJustificationWithAI(
+    if (options?.useAI) {
+      const requiredSkills = this.extractSkillsFromText(
+        `${job.titulo} ${job.descripcion} ${job.ubicacion}`,
+        allSkills,
+      );
+      finalJustification = await this.generateJustificationWithAI(
         score,
         matchedSkills,
         missingSkills,
         requiredSkills,
         profile,
         job,
-      ).catch(() =>
-        this.generateJustificationWithRules(
-          score,
-          matchedSkills,
-          missingSkills,
-          requiredSkills,
-          profile,
-          job,
-        ),
-      );
-    } else {
-      justification = this.generateJustificationWithRules(
-        score,
-        matchedSkills,
-        missingSkills,
-        requiredSkills,
-        profile,
-        job,
-      );
+      ).catch(() => justification);
     }
 
     return this.upsertMatchResult(
       profile.id,
       jobId,
       score,
-      justification,
+      finalJustification,
       missingSkills,
     );
   }
 
-  /////////////////////////////////////////////////////////////////////////
-  // matchStudentToAllJobs: Matching de un estudiante vs todas las vacantes activas (< 30 días)
-  /////////////////////////////////////////////////////////////////////////
   async matchStudentToAllJobs(
     userId: number,
     options?: MatchingOptions,
   ): Promise<MatchResult[]> {
     const profile = await this.getProfileByUserId(userId);
 
+    if (!profile.studentSkills?.length) {
+      this.logger.warn(`Student ${userId} has no skills, skipping matching`);
+      return [];
+    }
+
+    const allSkills = await this.getAllSkillsCached();
+
     const thirtyDaysAgo = subDays(new Date(), 30);
     const jobs = await this.jobRepo.find({
       where: { fecha_publicacion: MoreThanOrEqual(thirtyDaysAgo) },
     });
 
-    const results: MatchResult[] = [];
+    const calculatedResults: Array<{
+      job: Job;
+      score: number;
+      matchedSkills: string[];
+      missingSkills: string[];
+      justification: string;
+    }> = [];
+
     for (const job of jobs) {
       try {
-        const result = await this.matchStudentToJob(userId, job.id, options);
-        results.push(result);
+        const result = this.matchStudentToJobInternal(profile, job, allSkills);
+        calculatedResults.push({ job, ...result });
       } catch (error: any) {
         this.logger.error(
           `Error matching student ${profile.id} to job ${job.id}: ${error.message}`,
         );
       }
     }
-    return results;
+
+    const matchResults: MatchResult[] = [];
+    for (let i = 0; i < calculatedResults.length; i += this.BATCH_SIZE) {
+      const batch = calculatedResults.slice(i, i + this.BATCH_SIZE);
+      const upserted = await Promise.all(
+        batch.map((r) =>
+          this.upsertMatchResult(
+            profile.id,
+            r.job.id,
+            r.score,
+            r.justification,
+            r.missingSkills,
+          ),
+        ),
+      );
+      matchResults.push(...upserted);
+    }
+
+    if (options?.useAI && calculatedResults.length > 0) {
+      const sorted = [...calculatedResults].sort((a, b) => b.score - a.score);
+      const top10 = sorted.slice(0, 10);
+
+      for (const r of top10) {
+        const requiredSkills = this.extractSkillsFromText(
+          `${r.job.titulo} ${r.job.descripcion} ${r.job.ubicacion}`,
+          allSkills,
+        );
+        const aiJustification = await this.generateJustificationWithAI(
+          r.score,
+          r.matchedSkills,
+          r.missingSkills,
+          requiredSkills,
+          profile,
+          r.job,
+        ).catch(() => r.justification);
+
+        await this.matchResultRepo.update(
+          { student_id: profile.id, job_id: r.job.id },
+          { justificacion_ia: aiJustification },
+        );
+
+        const mr = matchResults.find((m) => m.job_id === r.job.id);
+        if (mr) mr.justificacion_ia = aiJustification;
+      }
+    }
+
+    return matchResults;
   }
 
-  /////////////////////////////////////////////////////////////////////////
-  // matchAllStudentsToAllJobs: Matching masivo (todos los estudiantes vs todas las vacantes activas)
-  /////////////////////////////////////////////////////////////////////////
+  async matchStudentToNewJobs(
+    userId: number,
+    jobIds: number[],
+    options?: MatchingOptions,
+  ): Promise<MatchResult[]> {
+    if (jobIds.length === 0) return [];
+
+    const profile = await this.getProfileByUserId(userId);
+
+    if (!profile.studentSkills?.length) {
+      return [];
+    }
+
+    const allSkills = await this.getAllSkillsCached();
+
+    const jobs = await this.jobRepo.find({
+      where: { id: In(jobIds) },
+    });
+
+    const matchResults: MatchResult[] = [];
+    for (const job of jobs) {
+      try {
+        const { score, matchedSkills, missingSkills, justification } =
+          this.matchStudentToJobInternal(profile, job, allSkills);
+        const mr = await this.upsertMatchResult(
+          profile.id,
+          job.id,
+          score,
+          justification,
+          missingSkills,
+        );
+        matchResults.push(mr);
+      } catch (error: any) {
+        this.logger.error(
+          `Error matching student ${profile.id} to new job ${job.id}: ${error.message}`,
+        );
+      }
+    }
+
+    if (options?.useAI && matchResults.length > 0) {
+      const sorted = [...matchResults].sort((a, b) => b.score - a.score);
+      const top10 = sorted.slice(0, 10);
+
+      for (const mr of top10) {
+        const job = jobs.find((j) => j.id === mr.job_id);
+        if (!job) continue;
+
+        const requiredSkills = this.extractSkillsFromText(
+          `${job.titulo} ${job.descripcion} ${job.ubicacion}`,
+          allSkills,
+        );
+        const aiJustification = await this.generateJustificationWithAI(
+          mr.score,
+          [],
+          mr.missing_skills ?? [],
+          requiredSkills,
+          profile,
+          job,
+        ).catch(() => mr.justificacion_ia);
+
+        mr.justificacion_ia = aiJustification;
+        await this.matchResultRepo.update(
+          { student_id: profile.id, job_id: job.id },
+          { justificacion_ia: aiJustification },
+        );
+      }
+    }
+
+    return matchResults;
+  }
+
   async matchAllStudentsToAllJobs(): Promise<
     { studentId: number; count: number }[]
   > {
@@ -202,11 +260,28 @@ export class MatchingService {
     return results;
   }
 
-  /////////////////////////////////////////////////////////////////////////
-  // getMatchesForUser: Retorna los resultados de matching del usuario actual
-  // Resuelve userId → profile, busca match_results con job, ordena por score DESC
-  // Soporta paginación (page/limit) y filtro por score mínimo (minScore)
-  /////////////////////////////////////////////////////////////////////////
+  async matchAllStudentsToNewJobs(
+    jobIds: number[],
+  ): Promise<{ studentId: number; count: number }[]> {
+    if (jobIds.length === 0) return [];
+
+    const profiles = await this.profileRepo.find();
+    const results: { studentId: number; count: number }[] = [];
+
+    for (const profile of profiles) {
+      try {
+        const matches = await this.matchStudentToNewJobs(profile.user_id, jobIds);
+        results.push({ studentId: profile.user_id, count: matches.length });
+      } catch (error: any) {
+        this.logger.error(
+          `Error processing new-job matches for student ${profile.id}: ${error.message}`,
+        );
+        results.push({ studentId: profile.id, count: 0 });
+      }
+    }
+    return results;
+  }
+
   async getMatchesForUser(
     userId: number,
     options?: MatchesQueryDto,
@@ -238,10 +313,6 @@ export class MatchingService {
     return { data, total, page, limit };
   }
 
-  /////////////////////////////////////////////////////////////////////////
-  // getMatchById: Retorna un match específico por ID, validando que
-  // pertenezca al usuario autenticado
-  /////////////////////////////////////////////////////////////////////////
   async getMatchById(matchId: number, userId: number): Promise<MatchResult> {
     const profile = await this.getProfileByUserId(userId);
     const match = await this.matchResultRepo.findOne({
@@ -256,14 +327,6 @@ export class MatchingService {
     return match;
   }
 
-  /////////////////////////////////////////////////////////////////////////
-  // Métodos privados - Utilidades
-  /////////////////////////////////////////////////////////////////////////
-
-  /////////////////////////////////////////////////////////////////////////
-  // getProfileByUserId: Busca el perfil asociado a un userId
-  // Lanza NotFoundException si no existe
-  /////////////////////////////////////////////////////////////////////////
   private async getProfileByUserId(userId: number): Promise<Profile> {
     const profile = await this.profileRepo.findOne({
       where: { user_id: userId },
@@ -277,15 +340,96 @@ export class MatchingService {
     return profile;
   }
 
-  /////////////////////////////////////////////////////////////////////////
-  // Métodos privados - Extracción de skills desde texto
-  /////////////////////////////////////////////////////////////////////////
+  private async getAllSkillsCached(): Promise<Skill[]> {
+    if (
+      this.skillsCache &&
+      Date.now() - this.skillsCache.timestamp < this.SKILLS_CACHE_TTL
+    ) {
+      return this.skillsCache.data;
+    }
+    const skills = await this.skillRepo.find();
+    this.skillsCache = { data: skills, timestamp: Date.now() };
+    return skills;
+  }
 
-  /////////////////////////////////////////////////////////////////////////
-  // extractSkillsFromText: Busca skills del catálogo dentro del texto de la vacante
-  // Usa regex con word boundaries para evitar falsos positivos
-  // Ej: "React" no matchea con "Reactivate"
-  /////////////////////////////////////////////////////////////////////////
+  private matchStudentToJobInternal(
+    profile: Profile,
+    job: Job,
+    allSkills: Skill[],
+  ): {
+    score: number;
+    matchedSkills: string[];
+    missingSkills: string[];
+    justification: string;
+  } {
+    const requiredSkills = this.extractSkillsFromText(
+      `${job.titulo} ${job.descripcion} ${job.ubicacion}`,
+      allSkills,
+    );
+
+    const studentSkillMap = new Map<string, StudentSkill>();
+    for (const ss of profile.studentSkills) {
+      studentSkillMap.set(ss.skill.nombre.toLowerCase(), ss);
+    }
+
+    const matchedSkills: string[] = [];
+    const missingSkills: string[] = [];
+
+    for (const skill of requiredSkills) {
+      if (studentSkillMap.has(skill.nombre.toLowerCase())) {
+        matchedSkills.push(skill.nombre);
+      } else {
+        missingSkills.push(skill.nombre);
+      }
+    }
+
+    const score = this.calculateScore(
+      profile,
+      job,
+      matchedSkills,
+      requiredSkills,
+      studentSkillMap,
+    );
+
+    const justification = this.generateJustificationWithRules(
+      score,
+      matchedSkills,
+      missingSkills,
+      requiredSkills,
+      profile,
+      job,
+    );
+
+    return { score, matchedSkills, missingSkills, justification };
+  }
+
+  private async upsertMatchResult(
+    studentId: number,
+    jobId: number,
+    score: number,
+    justification: string,
+    missingSkills: string[],
+  ): Promise<MatchResult> {
+    await this.matchResultRepo.upsert(
+      {
+        student_id: studentId,
+        job_id: jobId,
+        score,
+        justificacion_ia: justification,
+        missing_skills: missingSkills,
+        fecha_analisis: new Date(),
+      },
+      {
+        conflictPaths: ['student_id', 'job_id'],
+        skipUpdateIfNoValuesChanged: true,
+      },
+    );
+
+    return this.matchResultRepo.findOneOrFail({
+      where: { student_id: studentId, job_id: jobId },
+    });
+  }
+
   private extractSkillsFromText(text: string, allSkills: Skill[]): Skill[] {
     const lowerText = text.toLowerCase();
     return allSkills.filter((skill) => {
@@ -297,18 +441,6 @@ export class MatchingService {
     });
   }
 
-  /////////////////////////////////////////////////////////////////////////
-  // Métodos privados - Cálculo de score
-  /////////////////////////////////////////////////////////////////////////
-
-  /////////////////////////////////////////////////////////////////////////
-  // calculateScore: Calcula score numérico (0-100)
-  // Distribución:
-  //   - Skills coincidentes:   50%
-  //   - Nivel de experiencia:  20%
-  //   - Modalidad preferida:   15%
-  //   - Ubicación/Remoto:     15%
-  /////////////////////////////////////////////////////////////////////////
   private calculateScore(
     profile: Profile,
     job: Job,
@@ -348,13 +480,6 @@ export class MatchingService {
     return Math.round(Math.min(100, Math.max(0, rawScore)));
   }
 
-  /////////////////////////////////////////////////////////////////////////
-  // calculateModalityScore: 15% del score total
-  // - Match exacto entre modalidad preferida y ofrecida = 15pts
-  // - Match parcial (híbrido con preferencia remoto/presencial) = 10pts
-  // - Sin datos = 7.5pts (neutro)
-  // - Sin coincidencia = 0pts
-  /////////////////////////////////////////////////////////////////////////
   private calculateModalityScore(profile: Profile, job: Job): number {
     const jobModality = this.inferModality(job);
     const pref = profile.modalidad_preferida;
@@ -372,11 +497,6 @@ export class MatchingService {
     return 0;
   }
 
-  /////////////////////////////////////////////////////////////////////////
-  // calculateLocationScore: 15% del score total
-  // - Trabajo remoto = 15pts (accesible para todos)
-  // - Ubicación fija = 7.5pts (neutro, no podemos determinar cercanía)
-  /////////////////////////////////////////////////////////////////////////
   private calculateLocationScore(job: Job): number {
     if (this.isRemoteJob(job)) return 15;
 
@@ -388,15 +508,6 @@ export class MatchingService {
     return 7.5;
   }
 
-  /////////////////////////////////////////////////////////////////////////
-  // Métodos privados - Inferencia de modalidad desde la vacante
-  /////////////////////////////////////////////////////////////////////////
-
-  /////////////////////////////////////////////////////////////////////////
-  // inferModality: Extrae la modalidad de la vacante analizando
-  // título, descripción y ubicación con regex
-  // Retorna: REMOTO | HIBRIDO | PRESENCIAL | null (no detectable)
-  /////////////////////////////////////////////////////////////////////////
   private inferModality(job: Job): Modalidad | null {
     const searchText = [job.titulo, job.descripcion, job.ubicacion]
       .join(' ')
@@ -425,19 +536,10 @@ export class MatchingService {
     return null;
   }
 
-  /////////////////////////////////////////////////////////////////////////
-  // isRemoteJob: Atajo para saber si una vacante es remota
-  /////////////////////////////////////////////////////////////////////////
   private isRemoteJob(job: Job): boolean {
     const modality = this.inferModality(job);
     return modality === Modalidad.REMOTO;
   }
-
-  /////////////////////////////////////////////////////////////////////////
-  // Opción B: Justificación con reglas predefinidas (default)
-  // Genera texto explicativo usando plantillas condicionales
-  // No requiere API externa, funciona offline
-  /////////////////////////////////////////////////////////////////////////
 
   private generateJustificationWithRules(
     score: number,
@@ -495,10 +597,6 @@ export class MatchingService {
     return parts.join(' ');
   }
 
-  /////////////////////////////////////////////////////////////////////////
-  // describeSkillLevels: Agrupa skills coincidentes por nivel para la justificación
-  // Ej: "Nivel avanzado en React, Node.js. Nivel intermedio en TypeScript."
-  /////////////////////////////////////////////////////////////////////////
   private describeSkillLevels(
     matchedSkills: string[],
     profile: Profile,
@@ -534,14 +632,6 @@ export class MatchingService {
     return levelParts.length > 0 ? levelParts.join('. ') + '.' : null;
   }
 
-  /////////////////////////////////////////////////////////////////////////
-  // Opción A: Justificación con Gemini API
-  // Usa el modelo gemini-3.5-flash para generar texto explicativo natural
-  // Requiere GEMINI_API_KEY en .env
-  // Fallback automático a Opción B si:
-  //   - No hay API key configurada
-  //   - La llamada a la API falla (timeout, error de red, etc.)
-  /////////////////////////////////////////////////////////////////////////
   private async generateJustificationWithAI(
     score: number,
     matchedSkills: string[],
@@ -575,7 +665,9 @@ Datos del match:
 - Modalidad preferida del estudiante: ${profile.modalidad_preferida || 'no especificada'}
 - Ubicación de la vacante: ${job.ubicacion}
 
-Genera un texto de 2-3 oraciones explicando el resultado de forma clara y útil para el estudiante.`;
+Genera exactamente 2-3 oraciones explicando la compatibilidad.
+Responde ÚNICAMENTE con el texto de la justificación, sin frases introductorias,
+saludos, títulos ni prefijos de ningún tipo. Empieza directamente con el mensaje.`;
 
     try {
       const model = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
@@ -611,46 +703,5 @@ Genera un texto de 2-3 oraciones explicando el resultado de forma clara y útil 
       profile,
       job,
     );
-  }
-
-  /////////////////////////////////////////////////////////////////////////
-  // Métodos privados - Persistencia
-  /////////////////////////////////////////////////////////////////////////
-
-  /////////////////////////////////////////////////////////////////////////
-  // upsertMatchResult: Inserta o actualiza el resultado en match_results
-  // Si ya existe un registro para (student_id, job_id) → UPDATE
-  // Si no existe → INSERT
-  // Esto evita duplicados al re-ejecutar el matching
-  /////////////////////////////////////////////////////////////////////////
-  private async upsertMatchResult(
-    studentId: number,
-    jobId: number,
-    score: number,
-    justification: string,
-    missingSkills: string[],
-  ): Promise<MatchResult> {
-    const existing = await this.matchResultRepo.findOne({
-      where: { student_id: studentId, job_id: jobId },
-    });
-
-    if (existing) {
-      existing.score = score;
-      existing.justificacion_ia = justification;
-      existing.missing_skills = missingSkills;
-      existing.fecha_analisis = new Date();
-      return this.matchResultRepo.save(existing);
-    }
-
-    const matchResult = this.matchResultRepo.create({
-      student_id: studentId,
-      job_id: jobId,
-      score,
-      justificacion_ia: justification,
-      missing_skills: missingSkills,
-      fecha_analisis: new Date(),
-    });
-
-    return this.matchResultRepo.save(matchResult);
   }
 }
